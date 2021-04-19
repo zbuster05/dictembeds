@@ -1,56 +1,82 @@
 # type: ignore
 # pylint: disable=no-member
 
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, AdamW
 import torch
 
-tokenizer = AutoTokenizer.from_pretrained("gpt2")
-model = AutoModelForQuestionAnswering.from_pretrained("gpt2")
+from torch.utils.data import DataLoader
 
-breakpoint()
+import tqdm
+import json
+import os
 
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
+class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
+    def __init__(self, tokenizer, directory="./enwiki_parsed", filebasename="enwiki-parsed_", mod=65536, total=45):
+        self.filepath = os.path.join(directory, filebasename)
+        self.mod = mod
+        self.total = total
+        self.tokenizer = tokenizer
 
+    def __getitem__(self, idx):
+        tokenizer = self.tokenizer
 
+        fileid = idx // self.mod
+        itemid = idx % self.mod
 
+        filename = self.filepath+str(fileid)+".json"
+        with open(filename, "r") as df:
+            data_loaded = json.load(df)
 
+        input_string = data_loaded["contexts"][itemid]
+        output_string = data_loaded["keywords"][itemid]
 
+        input_tokenized = tokenizer.encode_plus(input_string, add_special_tokens=True, return_tensors="pt", padding='max_length', truncation=True, max_length=512)
+        output_tokenized = tokenizer.encode_plus(output_string, add_special_tokens=True, return_tensors="pt", padding='max_length', truncation=True, max_length=512)
+        return {"input": input_tokenized["input_ids"], "output": output_tokenized["input_ids"], "mask": input_tokenized["attention_mask"]}
 
+    def __len__(self):
+        return self.mod*self.total
 
+model = GPT2LMHeadModel.from_pretrained("gpt2")
 
-# ---------------------------------------------
-# context = r"""
-# Quantum computing is the use of quantum phenomena such as superposition and entanglement to perform computation. Computers that perform quantum computations are known as quantum computers.[1]:I-5 They are believed to be able to solve certain computational problems, such as integer factorization (which underlies RSA encryption), substantially faster than classical computers. The study of quantum computing is a subfield of quantum information science. It is likely to expand in the next few years as the field shifts toward real-world use in pharmaceutical, data security and other applications. [2]
-# """
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-# questions = [
-        # "What problems could quantum computers solve?",
-# ]
+model.to(device)
+model.train()
 
-# for question in questions:
-    # # encode input and context
-    # inputs = tokenizer.encode_plus(question, context, add_special_tokens=True, return_tensors="pt", padding=True)
+train_dataset = EnWikiKeywordSentsDataset(tokenizer)
+train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 
-    # # do maff
-    # model_result = model(**inputs)
+optim = AdamW(model.parameters(), lr=5e-5)
 
-    # # get the start and end location logits
-    # start_logits = model_result["start_logits"]
-    # end_logits = model_result["end_logits"]
+# https://huggingface.co/transformers/custom_datasets.html?highlight=fine%20tuning
+model.resize_token_embeddings(len(tokenizer))
+for epoch in range(3):
+    databatched_loader = tqdm.tqdm(train_loader)
 
-    # # get the top k=1 likely start and end locations
-    # answer_start = torch.argmax(start_logits) 
-    # answer_end = torch.argmax(end_logits) + 1 
+    for chicken in databatched_loader:
+        optim.zero_grad()
+        inputs = chicken['input'].to(device)
+        attention_mask = chicken['mask'].to(device)
+        outputs = chicken['output'].to(device)
+         
+        logits = model(inputs, attention_mask=attention_mask, labels=outputs)
+        loss = logits[0]
 
-    # # get the input token IDs as a list
-    # input_ids = inputs["input_ids"].tolist()[0]
-    # # and slice for our desired start and end
-    # answer_ids = input_ids[answer_start:answer_end]
+        databatched_loader.set_description(f'loss: {loss}')
+        databatched_loader.refresh()
+    
+        loss.backward()
+        optim.step()
 
-    # # unvectorize
-    # answer_tokens = tokenizer.convert_ids_to_tokens(answer_ids)
-    # # untokenize
-    # answer = tokenizer.convert_tokens_to_string(answer_tokens)
+    oneAnswer = torch.argmax(logits[1][0][0], dim=1)
+    answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
+    answer = tokenizer.convert_tokens_to_string(answer_tokens)
+    
+    print(answer)
+    model.save_pretrained(f"./training/gpt2_enwiki_{epoch}")
 
-    # breakpoint()
 
