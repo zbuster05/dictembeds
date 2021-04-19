@@ -73,10 +73,16 @@ model.train()
 train_dataset = EnWikiKeywordSentsDataset(tokenizer)
 train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 
-optim = AdamW(model.parameters(), lr=5e-5)
+optim = AdamW([
+        {"params": model.transformer.h.parameters(), "lr": 5e-6},
+        {"params": model.lm_head.parameters(), "lr": 1e-5},
+    ], lr=1e-5)
+
+# optim = AdamW(model.parameters(), lr=5e-5)
 
 modelID = str(uuid.uuid4())[-5:]
 
+model.save_pretrained(f"./training/gpt2_enwiki_BASE-{modelID}")
 # https://huggingface.co/transformers/custom_datasets.html?highlight=fine%20tuning
 # model.resize_token_embeddings(len(tokenizer))
 for epoch in range(3):
