@@ -12,8 +12,17 @@ import tqdm
 import json
 import os
 
+database_at_home = {}
+
+for identifier in tqdm.tqdm(range(45)):
+    filename = f"./enwiki_parsed/enwiki-parsed_{identifier}.json"
+    with open(filename, "r") as df:
+        data_loaded = json.load(df)
+        database_at_home[identifier] = data_loaded
+
+
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+tokenizer.add_special_tokens({'sep_token': '<|seperator|>', 'pad_token':'<|pad|>'})
 
 class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
     def __init__(self, tokenizer, directory="./enwiki_parsed", filebasename="enwiki-parsed_", mod=65536, total=45):
@@ -28,30 +37,37 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         fileid = idx // self.mod
         itemid = idx % self.mod
 
-        filename = self.filepath+str(fileid)+".json"
-        with open(filename, "r") as df:
-            data_loaded = json.load(df)
+        data_loaded = database_at_home.get(fileid)
 
         input_string = data_loaded["contexts"][itemid]
         output_string = data_loaded["keywords"][itemid]
 
-        input_tokenized = tokenizer.encode_plus(input_string, add_special_tokens=True, return_tensors="pt", padding='max_length', truncation=True, max_length=512)
-        output_tokenized = tokenizer.encode_plus(output_string, add_special_tokens=True, return_tensors="pt", padding='max_length', truncation=True, max_length=512)
+        output_tokenized = tokenizer.tokenize(output_string)
+        input_tokenized = tokenizer.tokenize(input_string)[:(512 - (len(output_tokenized) + 3))]
 
-        input_tokenized["input_ids"][input_tokenized["input_ids"]==50257] = 0
-        output_tokenized["input_ids"][output_tokenized["input_ids"]==50257] = -100
-        
-        return {"input": input_tokenized["input_ids"], "output": output_tokenized["input_ids"], "input_mask": input_tokenized["attention_mask"], "output_mask": output_tokenized["attention_mask"]}
+        input_truncated = [tokenizer.bos_token]+input_tokenized+[tokenizer.sep_token]
+        output_truncated = [tokenizer.bos_token]+input_tokenized+[tokenizer.sep_token] + output_tokenized[:512-3] + [tokenizer.eos_token]
+
+        input_padded = input_truncated + [tokenizer.pad_token for _ in range(512-len(input_truncated))]
+        output_padded = output_truncated + [tokenizer.pad_token for _ in range(512-len(output_truncated))]
+
+        input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
+        output_encoded = tokenizer.convert_tokens_to_ids(input_padded)
+
+        input_mask = [1 for _ in range(len(input_truncated))] + [0 for _ in range(512-len(input_truncated))]
+
+        return {"input": torch.LongTensor([input_encoded]), "output": torch.LongTensor([output_encoded]), "input_mask": torch.LongTensor([input_mask])}
 
     def __len__(self):
         return self.mod*self.total
 
 model = GPT2LMHeadModel.from_pretrained("gpt2")
 
-# device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-device = torch.device('cpu')
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 model.to(device)
+model.resize_token_embeddings(len(tokenizer))
+
 model.train()
 
 train_dataset = EnWikiKeywordSentsDataset(tokenizer)
@@ -72,6 +88,8 @@ for epoch in range(3):
         inputs = chicken['input'].to(device)
         attention_mask = chicken['input_mask'].to(device)
         outputs = chicken['output'].to(device)
+
+        outputs[outputs==50256] = -100
          
         logits = model(inputs, attention_mask=attention_mask, labels=outputs)
         loss = logits[0]
