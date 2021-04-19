@@ -38,6 +38,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_tokenized = tokenizer.encode_plus(input_string, add_special_tokens=True, return_tensors="pt", padding='max_length', truncation=True, max_length=512)
         output_tokenized = tokenizer.encode_plus(output_string, add_special_tokens=True, return_tensors="pt", padding='max_length', truncation=True, max_length=512)
 
+        input_tokenized["input_ids"][input_tokenized["input_ids"]==50257] = 0
         output_tokenized["input_ids"][output_tokenized["input_ids"]==50257] = -100
         
         return {"input": input_tokenized["input_ids"], "output": output_tokenized["input_ids"], "input_mask": input_tokenized["attention_mask"], "output_mask": output_tokenized["attention_mask"]}
@@ -47,7 +48,8 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
 model = GPT2LMHeadModel.from_pretrained("gpt2")
 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+# device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+device = torch.device('cpu')
 
 model.to(device)
 model.train()
@@ -60,7 +62,7 @@ optim = AdamW(model.parameters(), lr=5e-5)
 modelID = str(uuid.uuid4())[-5:]
 
 # https://huggingface.co/transformers/custom_datasets.html?highlight=fine%20tuning
-model.resize_token_embeddings(len(tokenizer))
+# model.resize_token_embeddings(len(tokenizer))
 for epoch in range(3):
     databatched_loader = tqdm.tqdm(train_loader)
 
