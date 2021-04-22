@@ -98,7 +98,7 @@ for epoch in range(3):
     writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
         
-        if (i % 10000 == 0):
+        if (i % 50000 == 0):
             tokenizer.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
             model.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
 
