@@ -44,8 +44,8 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:510-len(title_tokenized)] + [tokenizer.eos_token]
-        decoder_input_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510]
-        output_tokenized =  tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token] 
+        decoder_input_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token]
+        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token] 
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(512-len(input_tokenized))]
         decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(512-len(decoder_input_tokenized))]
