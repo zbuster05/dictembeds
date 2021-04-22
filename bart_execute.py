@@ -10,9 +10,9 @@ import json
 import os
 
 
-tokenizer = BartTokenizer.from_pretrained("facebook/bart-base")
+tokenizer = BartTokenizer.from_pretrained("./training/bart_enwiki_BASE-05fcd:0:1000")
 
-model = BartForConditionalGeneration.from_pretrained("facebook/bart-base")
+model = BartForConditionalGeneration.from_pretrained("./training/bart_enwiki_BASE-05fcd:0:1000")
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -20,7 +20,9 @@ model.to(device)
 
 
 ARTICLE_TO_SUMMARIZE = """
-The ability to produce organisms more of their kind is one characteristic that best distinguishes living things from nonliving matter. Viruses + Organelles challenge this definition => they are symbiotic and cannot reproduce on their own. We tend to think that cells everyday, 50-70 Billion die programmed cell death. To compensate this, Mitosis (cell division) happen. Cell divide in opposite directions and Two strands are antiparallel to each other.
+Whole segments of genome exchange abruptly as two flu viruses infect the same cell to create a new strand.  There are two mechnisms by which happens — the crossing-over mechnism and genome segment reassortment Self-mixing of ozaki fragments during viral recombination in the ozaki process cause sudden mutations. Two viruses coinfect the same cell, causing cross-talk in swapping segment.
+
+This usually occurs due an error in a polymerase-driven process, where single/groups of nucleotides flip slowly over time due to mistakes in replication. The former is an environment-dependent process, where the latter is able to be modeled as it is due to predictable transcription mistake.
 """
 inputs = tokenizer([ARTICLE_TO_SUMMARIZE], max_length=512, return_tensors='pt')
 
