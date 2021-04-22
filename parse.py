@@ -9,6 +9,7 @@ data_files = 240
 counter = 0
 identif = 0
 
+titles = []
 keyword_sentences = []
 context_sentences = []
 
@@ -38,6 +39,7 @@ for i in tqdm.tqdm(range(data_files)):
         wiki_filtered_sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', wiki_filtered_lines)
 
         if (len(wiki_filtered_sentences)>2):
+            titles.append(title)
             keyword_sentences.append(wiki_filtered_sentences[0])
 
             context = ""
@@ -47,9 +49,10 @@ for i in tqdm.tqdm(range(data_files)):
 
             counter += 1
             if counter != 0 and counter % 65536 == 0:
-                with open(f"./enwiki_parsed/enwiki-parsed_{identif}.json", "w") as df:
-                    json.dump({"keywords": keyword_sentences, "contexts": context_sentences}, df)
+                with open(f"./enwiki_parsed_titles/enwiki-parsed_{identif}.json", "w") as df:
+                    json.dump({"keywords": keyword_sentences, "contexts": context_sentences, "titles": titles}, df)
                 counter = 0
+                titles = []
                 keyword_sentences = []
                 context_sentences = []
                 identif += 1
