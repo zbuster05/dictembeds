@@ -42,18 +42,23 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         output_string = data_loaded["keywords"][itemid]
 
         input_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(input_string)[:510] + [tokenizer.eos_token]
-        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token]
+        decoder_input_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510]
+        output_tokenized =  tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token] 
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(512-len(input_tokenized))]
+        decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(512-len(decoder_input_tokenized))]
         output_padded = output_tokenized + [tokenizer.pad_token for _ in range(512-len(output_tokenized))]
 
         input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
+        decoder_input_encoded = tokenizer.convert_tokens_to_ids(decoder_input_padded)
         output_encoded = tokenizer.convert_tokens_to_ids(output_padded)
 
-        input_mask = [1 for _ in range(len(input_encoded))] + [0 for _ in range(512-len(input_encoded))]
-        output_mask = [1 for _ in range(len(output_encoded))] + [0 for _ in range(512-len(output_encoded))]
+        output_encoded[output_encoded==tokenizer.pad_token_id] = -100
 
-        return {"input_data": torch.LongTensor(input_encoded[:512]), "output_data": torch.LongTensor(output_encoded[:512]), "input_mask": torch.LongTensor(input_mask[:512]), "output_mask": torch.LongTensor(output_mask[:512])}
+        input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(512-len(input_tokenized))]
+        decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(512-len(decoder_input_tokenized))]
+
+        return {"input_data": torch.LongTensor(input_encoded[:512]), "output_data": torch.LongTensor(output_encoded[:512]), "decoder_data": torch.LongTensor(decoder_input_encoded[:512]), "input_mask": torch.LongTensor(input_mask[:512]), "decoder_mask": torch.LongTensor(decoder_mask[:512])}
 
     def __len__(self):
         return self.mod*self.total
@@ -75,12 +80,14 @@ train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
         # {"params": model.lm_head.parameters(), "lr": 1e-5},
     # ], lr=1e-5)
 
-optim = AdamW(model.parameters(), lr=3e-5)
+optim = AdamW(model.parameters(), lr=5e-5)
 scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = 1000, num_training_steps = 3*len(train_loader))
 
 modelID = str(uuid.uuid4())[-5:]
 
-model.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}")
+print("Ready to go. On your call!")
+breakpoint()
+
 # https://huggingface.co/transformers/custom_datasets.html?highlight=fine%20tuning
 # model.resize_token_embeddings(len(tokenizer))
 for epoch in range(3):
@@ -88,13 +95,19 @@ for epoch in range(3):
 
     writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
+        
+        if (i % 10000 == 0):
+            tokenizer.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
+            model.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
+
         optim.zero_grad()
 
         input_data = chicken['input_data'].to(device)
+        decoder_data = chicken['decoder_data'].to(device)
         output_data = chicken['output_data'].to(device)
         attention_mask = chicken['input_mask'].to(device)
 
-        result = model(input_data, attention_mask=attention_mask, labels=output_data)
+        result = model(input_data, attention_mask=attention_mask, decoder_input_ids=decoder_data, labels=output_data)
         logits = result["logits"]
         loss = result["loss"]
 
@@ -105,13 +118,25 @@ for epoch in range(3):
         optim.step()
         scheduler.step()
 
+
+        writer.add_scalar('Train/loss', loss.item(), i+(epoch*len(databatched_loader)))
+
         oneAnswer = torch.argmax(logits[0], dim=1)
         answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
-        answer = tokenizer.convert_tokens_to_string(answer_tokens)
-        
-        writer.add_scalar('Train/loss', loss.item(), i+(epoch*len(databatched_loader)))
-        writer.add_text('Train/sample', answer, i+(epoch*len(databatched_loader)))
-    
-    model.save_pretrained(f"./training/bart_enwiki_{epoch}-{modelID}")
+        answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens if a != tokenizer.pad_token])
+
+        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(decoder_data[0])
+        desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens if a != tokenizer.pad_token])
+
+        inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
+        inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
+
+        writer.add_text('Train/sample', 
+                "<logits>"+answer+"</logits>\n\n"+
+                "<labels>"+desiredAnswer+"</labels>\n\n"+
+                "<src>"+inputWord+"</src>\n",
+            i+(epoch*len(databatched_loader)))
+
+    # model.save_pretrained(f"./training/bart_enwiki_{epoch}-{modelID}")
 
 
