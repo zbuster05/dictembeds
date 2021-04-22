@@ -75,12 +75,14 @@ train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
         # {"params": model.lm_head.parameters(), "lr": 1e-5},
     # ], lr=1e-5)
 
-optim = AdamW(model.parameters(), lr=3e-5)
+optim = AdamW(model.parameters(), lr=5e-5)
 scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = 1000, num_training_steps = 3*len(train_loader))
 
 modelID = str(uuid.uuid4())[-5:]
 
-model.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}")
+print("Ready to go. On your call!")
+breakpoint()
+
 # https://huggingface.co/transformers/custom_datasets.html?highlight=fine%20tuning
 # model.resize_token_embeddings(len(tokenizer))
 for epoch in range(3):
@@ -88,6 +90,10 @@ for epoch in range(3):
 
     writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
+        
+        if (i % 50000 == 0):
+            model.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
+
         optim.zero_grad()
 
         input_data = chicken['input_data'].to(device)
@@ -107,10 +113,21 @@ for epoch in range(3):
 
         oneAnswer = torch.argmax(logits[0], dim=1)
         answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
-        answer = tokenizer.convert_tokens_to_string(answer_tokens)
-        
+        answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens if a != tokenizer.pad_token])
+
+        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(output_data[0])
+        desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens if a != tokenizer.pad_token])
+
+        inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
+        inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
+
+
         writer.add_scalar('Train/loss', loss.item(), i+(epoch*len(databatched_loader)))
-        writer.add_text('Train/sample', answer, i+(epoch*len(databatched_loader)))
+        writer.add_text('Train/sample', 
+                "<logits>"+answer+"</logits>\n\n"+
+                "<labels>"+desiredAnswer+"</labels>\n\n"+
+                "<src>"+inputWord+"</src>\n",
+            i+(epoch*len(databatched_loader)))
     
     model.save_pretrained(f"./training/bart_enwiki_{epoch}-{modelID}")
 
