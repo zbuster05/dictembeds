@@ -15,7 +15,7 @@ import os
 database_at_home = {}
 
 for identifier in tqdm.tqdm(range(45)):
-    filename = f"./enwiki_parsed/enwiki-parsed_{identifier}.json"
+    filename = f"./enwiki_parsed_titles/enwiki-parsed_{identifier}.json"
     with open(filename, "r") as df:
         data_loaded = json.load(df)
         database_at_home[identifier] = data_loaded
@@ -40,10 +40,12 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
         input_string = data_loaded["contexts"][itemid]
         output_string = data_loaded["keywords"][itemid]
+        title_string = data_loaded["titles"][itemid]
 
-        input_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(input_string)[:510] + [tokenizer.eos_token]
-        decoder_input_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510]
-        output_tokenized =  tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token] 
+        title_tokenized = tokenizer.tokenize(title_string)
+        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:510-len(title_tokenized)] + [tokenizer.eos_token]
+        decoder_input_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token]
+        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:510] + [tokenizer.eos_token] 
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(512-len(input_tokenized))]
         decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(512-len(decoder_input_tokenized))]
@@ -96,7 +98,7 @@ for epoch in range(3):
     writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
         
-        if (i % 10000 == 0):
+        if (i % 50000 == 0):
             tokenizer.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
             model.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
 
