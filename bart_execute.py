@@ -29,12 +29,12 @@ class Engine:
         summary_ids = self.model.generate(processed_samples, num_beams=4, early_stopping=True)
         return [self.tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
 
-    def batch_process_samples(self, samples:[[str,str]]):
+    def batch_process_samples(self, samples:[[str,str]], clip_to=512):
         results = []
         max_length = 0
 
         for sample in samples:
-            sample_encoded = self.__pre_process_sample(sample[0], sample[1])
+            sample_encoded = self.__pre_process_sample(sample[0], sample[1])[:clip_to]
             results.append(sample_encoded)
             max_length = max(max_length, len(sample_encoded))
 
@@ -43,52 +43,9 @@ class Engine:
 
         return torch.LongTensor(results)
 
-    def execute(self, samples:[[str,str]]):
+    def batch_execute(self, samples:[[str,str]]):
         return self.generate_syntheses(self.batch_process_samples(samples))
 
-
-a = time.time()
-E = Engine()
-b = time.time()
-res = E.execute([
-    ["Retroviruses", 
-    """Viruses that have the ability to intergrate into the chromosomes of the host cell.  
-
-Early Events
-
-* Viruses is uncoated, and uses an enzyme called reverse transcriptase to turn ssRNA to cDNA, and finally into dsDNA
-* Then, the enzyme integrase threads the viral dsDNA into the cell's nucleaus
-* HIV protease cuts HIV polyproteins into individual parts ready for budding
-
-Late Events
-
-* Proviral region is transcribed slowly whenever ribosome comes across it by the host DNA polymerase II to make viral proteins + replicate the viral genome
-* Components are later exported, assembled, and slowly released through budding
-
-To make this happen, the virus needs...
-
-- Reverse Transcriptase
-    - Transcript RNA to double-stranded RNA
-    - Take double-stranded RNA to turn into DNA
-- Integrase
-    - Force insert the DNA into the genome of the host cell
-
-And because of the fact that viral DNA is now in cellular DNA, these viruses' DNAs are hard to get rid of.
-
-And this is why we can't cure HIV.
-
-Virus, in this case, spread through cell duplication
-
-* Proviral region on the DNA, every time the ribosome comes across it, makes a new viron
-* These components are then assembled, sent, etc. as usual
-* Because of the fact that the ribosome needs to, well, come across the bit of DNA for this to work, the virons are made slowly by "trickling out. """],
-    ["Mitosis",
-    """* Chromesomes line up in equator
-* Each chromesome has two chromatid exactly the same
-* Microtubials to pull chromesomes appart connected to kinecore, a joint in the chromatid
-* Kinetore senses tension, and when it is correct, molecules are sent down the microtubials to send a split signal"""]
-
-])
-c = time.time()
-breakpoint()
+    def execute(self, article_title:str="", context:str=""):
+        return self.batch_execute([article_title, context])[0]
 
