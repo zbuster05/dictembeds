@@ -47,5 +47,23 @@ class Engine:
         return self.generate_syntheses(self.batch_process_samples(samples))
 
     def execute(self, article_title:str="", context:str=""):
-        return self.batch_execute([article_title, context])[0]
+        return self.batch_execute([[article_title, context]])[0]
+
+if __name__ == "__main__":
+    # dammit zach
+    e = Engine()
+    res = e.execute("Alan Turing", """Alan turing was a mathematition and chyptographer who worked to break German encryption and ciphers during WWI and established a series of theories on algorithmic computability.
+
+## Work at Combridge Regarding Computability
+Turing crated proof that a "universal computing machine", as defined by specific parametres, could compute any mathematical operation as long as it is algorithmically representable.
+
+Furthermore, he showed that there are no solutions to the base-case decision problem (finding the provability of an theorem based on only axioms in O(1) time) because his "computing machines" could not have a finite state by when they halt.
+
+## Hut8
+Turing invented a system to decode German communication ("Enigma") with a rotating weights sytem in the Hut8 program at Bletchley Park; however, Turing did not support the method by which the US navy decided to execute upon codebreaking. His codebreaking efforts, by estimate, shaved 2 years from the war.
+
+He also assisted in creating secured speech systems for the navy.""")
+    print(res)
+    breakpoint()
+
 
