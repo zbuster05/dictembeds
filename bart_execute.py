@@ -11,7 +11,7 @@ import time
 import os
 
 class Engine:
-    def __init__(self, path:str="./training/bart_enwiki_BASE-6c279:0:400000"):
+    def __init__(self, path:str="./training/bart_enwiki_BASE-e8bab:0:400000"):
         self.tokenizer = BartTokenizer.from_pretrained(path)
         self.model = BartForConditionalGeneration.from_pretrained(path)
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -26,7 +26,7 @@ class Engine:
                 [self.tokenizer.eos_token])
 
     def generate_syntheses(self, processed_samples:[torch.Tensor]):
-        summary_ids = self.model.generate(processed_samples, num_beams=4, early_stopping=True)
+        summary_ids = self.model.generate(processed_samples, num_beams=4, early_stopping=False)
         return [self.tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
 
     def batch_process_samples(self, samples:[[str,str]], clip_to=512):
@@ -52,17 +52,7 @@ class Engine:
 if __name__ == "__main__":
     # dammit zach
     e = Engine()
-    res = e.execute("Alan Turing", """Alan turing was a mathematition and chyptographer who worked to break German encryption and ciphers during WWI and established a series of theories on algorithmic computability.
-
-## Work at Combridge Regarding Computability
-Turing crated proof that a "universal computing machine", as defined by specific parametres, could compute any mathematical operation as long as it is algorithmically representable.
-
-Furthermore, he showed that there are no solutions to the base-case decision problem (finding the provability of an theorem based on only axioms in O(1) time) because his "computing machines" could not have a finite state by when they halt.
-
-## Hut8
-Turing invented a system to decode German communication ("Enigma") with a rotating weights sytem in the Hut8 program at Bletchley Park; however, Turing did not support the method by which the US navy decided to execute upon codebreaking. His codebreaking efforts, by estimate, shaved 2 years from the war.
-
-He also assisted in creating secured speech systems for the navy.""")
+    res = e.execute("Enigma Machine", """It was employed extensively by Nazi Germany during World War II, in all branches of the German military. The Germans believed, erroneously, that use of the Enigma machine enabled them to communicate securely and thus enjoy a huge advantage in World War II. The Enigma machine was considered to be so secure that even the most top-secret messages were enciphered on its electrical circuits. Enigma has an electromechanical rotor mechanism that scrambles the 26 letters of the alphabet. In typical use, one person enters text on the Enigma's keyboard and another person writes down which of 26 lights above the keyboard lights up at each key press. If plain text is entered, the lit-up letters are the encoded ciphertext. Entering ciphertext transforms it back into readable plaintext. The rotor mechanism changes the electrical connections between the keys and the lights with each keypress. The security of the system depends on a set of machine settings that were generally changed daily during the war, based on secret key lists distributed in advance, and on other settings that were changed for each message. The receiving station has to know and use the exact settings employed by the transmitting station to successfully decrypt a message. """)
     print(res)
     breakpoint()
 
