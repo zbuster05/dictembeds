@@ -50,13 +50,11 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(512-len(input_tokenized))]
         decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(512-len(decoder_input_tokenized))]
-        output_padded = output_tokenized + [tokenizer.pad_token for _ in range(512-len(output_tokenized))]
+        # output_padded = output_tokenized + [tokenizer.pad_token for _ in range(512-len(output_tokenized))]
 
         input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
         decoder_input_encoded = tokenizer.convert_tokens_to_ids(decoder_input_padded)
-        output_encoded = tokenizer.convert_tokens_to_ids(output_padded)
-
-        output_encoded[output_encoded==tokenizer.pad_token_id] = -100
+        output_encoded = tokenizer.convert_tokens_to_ids(output_tokenized) + [-100 for _ in range(512-len(output_tokenized))]
 
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(512-len(input_tokenized))]
         decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(512-len(decoder_input_tokenized))]
@@ -121,18 +119,12 @@ for epoch in range(3):
         optim.step()
         scheduler.step()
 
-
         writer.add_scalar('Train/loss', loss.item(), i+(epoch*len(databatched_loader)))
 
         oneAnswer = torch.argmax(logits[0], dim=1)
-        answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
-        answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens if a != tokenizer.pad_token])
-
-        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(decoder_data[0])
-        desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens if a != tokenizer.pad_token])
-
-        inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
-        inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
+        answer = tokenizer.decode(oneAnswer)
+        desiredAnswer = tokenizer.decode(decoder_data[0])
+        inputWord = tokenizer.decode(input_data[0])
 
         writer.add_text('Train/sample', 
                 "<logits>"+answer+"</logits>\n\n"+
