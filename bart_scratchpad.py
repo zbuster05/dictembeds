@@ -119,12 +119,22 @@ for epoch in range(3):
         optim.step()
         scheduler.step()
 
+
         writer.add_scalar('Train/loss', loss.item(), i+(epoch*len(databatched_loader)))
 
         oneAnswer = torch.argmax(logits[0], dim=1)
-        answer = tokenizer.decode(oneAnswer)
-        desiredAnswer = tokenizer.decode(decoder_data[0])
-        inputWord = tokenizer.decode(input_data[0])
+        answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
+        
+        try: 
+            answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token])
+        except ValueError:
+            answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens[1:] if a != tokenizer.pad_token])
+
+        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(decoder_data[0])
+        desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
+
+        inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
+        inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
 
         writer.add_text('Train/sample', 
                 "<logits>"+answer+"</logits>\n\n"+
