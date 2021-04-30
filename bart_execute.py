@@ -9,13 +9,17 @@ import tqdm
 import json
 import time
 import os
+import sys
 
 class Engine:
-    def __init__(self, path:str="./training/bart_enwiki_BASE-e8bab:0:400000"):
+    def __init__(self, path:str="./training/bart_enwiki_BASE-6440b:0:135000"):
         self.tokenizer = BartTokenizer.from_pretrained(path)
-        self.model = BartForConditionalGeneration.from_pretrained(path)
+        self.model = BartForConditionalGeneration.from_pretrained(path, torchscript=True)
+
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
         self.model.to(device)
+        self.model.eval()
 
     def __pre_process_sample(self, article:str="", context:str=""):
         return self.tokenizer.convert_tokens_to_ids(
@@ -26,7 +30,7 @@ class Engine:
                 [self.tokenizer.eos_token])
 
     def generate_syntheses(self, processed_samples:[torch.Tensor]):
-        summary_ids = self.model.generate(processed_samples, num_beams=4, early_stopping=False)
+        summary_ids = self.model.generate(processed_samples, max_length=1024, early_stopping=True)
         return [self.tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
 
     def batch_process_samples(self, samples:[[str,str]], clip_to=512):
@@ -52,8 +56,8 @@ class Engine:
 if __name__ == "__main__":
     # dammit zach
     e = Engine()
-    res = e.execute("Enigma Machine", """It was employed extensively by Nazi Germany during World War II, in all branches of the German military. The Germans believed, erroneously, that use of the Enigma machine enabled them to communicate securely and thus enjoy a huge advantage in World War II. The Enigma machine was considered to be so secure that even the most top-secret messages were enciphered on its electrical circuits. Enigma has an electromechanical rotor mechanism that scrambles the 26 letters of the alphabet. In typical use, one person enters text on the Enigma's keyboard and another person writes down which of 26 lights above the keyboard lights up at each key press. If plain text is entered, the lit-up letters are the encoded ciphertext. Entering ciphertext transforms it back into readable plaintext. The rotor mechanism changes the electrical connections between the keys and the lights with each keypress. The security of the system depends on a set of machine settings that were generally changed daily during the war, based on secret key lists distributed in advance, and on other settings that were changed for each message. The receiving station has to know and use the exact settings employed by the transmitting station to successfully decrypt a message. """)
+    res = e.execute(sys.argv[1], sys.argv[2])
     print(res)
-    breakpoint()
+    # dammit zach
 
 
