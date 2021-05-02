@@ -17,6 +17,7 @@ import os
 import sys
 
 app = Flask("InscriptioEngine")
+torch.multiprocessing.set_start_method('spawn')
 
 def chunks(lst, n):
     for i in range(0, len(lst), n):
