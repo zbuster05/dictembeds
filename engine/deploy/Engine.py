@@ -3,6 +3,7 @@
 
 from tqdm import tqdm
 from transformers import BartTokenizer, BartForConditionalGeneration, AdamW
+import torch.multiprocessing as mp
 import torch
 
 import flask
@@ -16,6 +17,10 @@ import os
 import sys
 
 app = Flask("InscriptioEngine")
+
+def chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
 class Engine:
     def __init__(self, path:str="./resources/bart_enwiki_BASE-6440b:0:135000"):
@@ -54,7 +59,8 @@ class Engine:
         return torch.LongTensor(results)
 
     def batch_execute(self, samples:[[str,str]]):
-        return self.generate_syntheses(self.batch_process_samples(samples))
+        res = self.generate_syntheses(self.batch_process_samples(samples))
+        return res 
 
     def execute(self, article_title:str="", context:str=""):
         return self.batch_execute([[article_title, context]])[0]
@@ -106,9 +112,26 @@ def api_batch_summarize():
     except KeyError:
         return jsonify({"response": "bad request", "payload": "ensure request contains JSON body {article_titles, article_bodies}"}), 400
 
+    try:
+        config = request_data["config"] 
+    except KeyError:
+        config = {}
+
+    num_workers = config.get("num_workers", 1)
+    batch_size = config.get("batch_size", 4)
+
+    # chunk the list into batch_size
+    data = list(chunks(list(zip(title,body)),batch_size))
+
     t1 = time.time()
-    res = e.batch_execute(zip(title, body))
+    pool = mp.Pool(num_workers)
+    res = pool.map(e.batch_execute, data)
+
+    pool.close()
+    pool.join()
     t2 = time.time()
+
+    res = [item for sublist in res for item in sublist]
 
     return jsonify({
         "response": "success", 
@@ -119,7 +142,7 @@ def api_batch_summarize():
  
     
 if __name__ == '__main__':
-    app.run(host="localhost", port=18860, debug=False)
+    app.run(host="localhost")
 
 
 
