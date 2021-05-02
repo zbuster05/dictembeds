@@ -168,3 +168,6 @@ tags
 *.lock
 trainarchives
 distenv
+archives
+resources
+bart_enwiki*

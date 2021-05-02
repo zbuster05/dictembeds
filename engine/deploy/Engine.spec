@@ -4,12 +4,12 @@
 block_cipher = None
 
 
-a = Analysis(['bart_execute.py'],
+a = Analysis(['Engine.py'],
              pathex=['/Users/houliu/Documents/Projects/inscriptio'],
              binaries=[],
              datas=[
-                 ("./training", "./training"), 
-                 ("./distenv/lib/python3.9/site-packages", ".")
+                 ("./resources", "./resources"), 
+                 ("./env/lib/python3.9/site-packages", ".")
              ],
              hiddenimports=[],
              hookspath=[],
@@ -25,7 +25,7 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='bart_execute',
+          name='InscriptioEngine',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -38,4 +38,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='bart_execute')
+               name='InscriptioEngine')
