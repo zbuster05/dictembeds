@@ -4,7 +4,7 @@
 block_cipher = None
 
 
-a = Analysis(['Engine.py'],
+a = Analysis(['runtime.py'],
              pathex=['/Users/houliu/Documents/Projects/inscriptio'],
              binaries=[],
              datas=[
