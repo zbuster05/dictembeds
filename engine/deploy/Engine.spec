@@ -11,7 +11,7 @@ a = Analysis(['runtime.py'],
                  ("./resources", "./resources"), 
                  ("./env/lib/python3.9/site-packages", ".")
              ],
-             hiddenimports=[],
+             hiddenimports=['logging.config'],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
