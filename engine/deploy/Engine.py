@@ -17,7 +17,8 @@ import os
 import sys
 
 app = Flask("InscriptioEngine")
-torch.multiprocessing.set_start_method('spawn')
+
+mp.set_start_method('spawn', force=True)
 
 def chunks(lst, n):
     for i in range(0, len(lst), n):
@@ -28,9 +29,9 @@ class Engine:
         self.tokenizer = BartTokenizer.from_pretrained(path)
         self.model = BartForConditionalGeneration.from_pretrained(path, torchscript=True)
 
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-        self.model.to(device)
+        self.model.to(self.device)
         self.model.eval()
 
     def __pre_process_sample(self, article:str="", context:str=""):
@@ -57,7 +58,7 @@ class Engine:
         for indx, i in enumerate(results):
             results[indx] = i+[self.tokenizer.pad_token_id for i in range(max_length-len(i))]
 
-        return torch.LongTensor(results)
+        return torch.LongTensor(results).to(self.device)
 
     def batch_execute(self, samples:[[str,str]]):
         res = self.generate_syntheses(self.batch_process_samples(samples))
