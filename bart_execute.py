@@ -1,6 +1,7 @@
 # type: ignore
 # pylint: disable=no-member
 
+from tqdm import tqdm
 from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
 import torch
 
@@ -54,10 +55,14 @@ class Engine:
         return self.batch_execute([[article_title, context]])[0]
 
 if __name__ == "__main__":
-    # dammit zach
+    # <dammit zach>
+    t1 = time.time()
     e = Engine()
+    t2 = time.time()
     res = e.execute(sys.argv[1], sys.argv[2])
+    t3 = time.time()
     print(res)
-    # dammit zach
+    print(t2-t1, t3-t2, t3-t1)
+    # </dammit zach>
 
 
