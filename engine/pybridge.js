@@ -1,5 +1,5 @@
 const { app, ipcMain } = require('electron')
-const { exec } = require("child_process");
+const { execSync } = require("child_process");
 
 const fs = require('fs')
 const fse = require('fs-extra')
@@ -13,25 +13,14 @@ const setupPyEnv = () => {
         fs.mkdirSync(envPath)
     }
 
-    glob(path.join(path.dirname(__filename), "inference/!(env)"), (_, file) => file.map(i => fse.copySync(i, path.join(envPath, path.basename(i)))));
+    glob.sync(path.join(path.dirname(__filename), "inference/!(env)")).map((file) => fse.copySync(file, path.join(envPath, path.basename(file))));
 
-    exec(path.join(path.dirname(__filename), "inference/setup.sh '")+envPath+"'", (error, stdout, stderr) => {
-        if (error) {
-            console.log(`error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.log(`stderr: ${stderr}`);
-            return;
-        }
-        console.log(`stdout: ${stdout}`);
-    });
-
+    execSync(path.join(path.dirname(__filename), "inference/setup.sh '")+envPath+"'");
 }
 
-ipcMain.on('pyenv.setup', (event, arg) => {
+ipcMain.on('pyenv.setup', (event, _) => {
     setupPyEnv();
-    event.reply('pyenv.setup-reply', 'success');
+    event.reply('pyenv.setup__reply', 'success');
 });
 
 

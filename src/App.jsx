@@ -1,10 +1,13 @@
 import "./App.css"
+
 import {ipcRenderer} from "electron";
+import { useState, useEffect } from "react";
 
 export default function App() {
-    console.log(ipcRenderer);
     return (
-        <div className="topbar">&nbsp;</div>
+        <>
+            <div className="topbar">&nbsp;</div>
+        </>
     )
 }
 
