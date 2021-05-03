@@ -20,7 +20,8 @@ function createWindow () {
         'minHeight': 650,
         'title': "inscriptio",
         'webPreferences': {
-            'nodeIntegration': true
+            'nodeIntegration': true,
+            'contextIsolation': false
         },
         'titleBarStyle': 'hiddenInset',
         'transparent': true,
