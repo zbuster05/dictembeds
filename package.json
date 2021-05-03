@@ -1,0 +1,47 @@
+{
+  "name": "inscriptio",
+  "version": "0.0.1",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/InSanityHQ/inscriptio/"
+  },
+  "author": "The Sanity Corner",
+  "license": " GPL-3.0-or-later",
+  "scripts": {
+    "start": "npx electron . & craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "react-scripts eject"
+  },
+  "bugs": {
+    "url": "https://github.com/InSanityHQ/inscriptio/issues"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^9",
+    "postcss": "^7",
+    "tailwindcss": "npm:@tailwindcss/postcss7-compat"
+  },
+  "dependencies": {
+    "@craco/craco": "^6.1.2",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-scripts": "^4.0.3",
+    "reactdom": "^2.0.0"
+  }
+}
