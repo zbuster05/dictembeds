@@ -1,6 +1,8 @@
+import "./App.css"
+
 export default function App() {
     return (
-        <div>hello. My name is big</div>
+        <div className="topbar">&nbsp;</div>
     )
 }
 
