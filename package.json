@@ -10,6 +10,8 @@
   "license": " GPL-3.0-or-later",
   "scripts": {
     "start": "npx electron . & craco start",
+    "runweb": "craco start",
+    "runelectron": "npx electron .",
     "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject"
@@ -39,6 +41,10 @@
   },
   "dependencies": {
     "@craco/craco": "^6.1.2",
+    "electron": "^12.0.6",
+    "electron-is-dev": "^2.0.0",
+    "electron-updater": "^4.3.8",
+    "fs-extra": "^9.1.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "^4.0.3",
