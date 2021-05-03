@@ -6,9 +6,11 @@ from transformers import BartTokenizer, BartForConditionalGeneration, AdamW
 import torch.multiprocessing as mp
 import torch
 
+import pathlib
 import flask
 from flask import request, jsonify, Flask, Response
 
+import os
 import uuid
 import tqdm
 import json
@@ -25,7 +27,7 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 class Engine:
-    def __init__(self, path:str="./resources/bart_enwiki_BASE-6440b:0:135000"):
+    def __init__(self, path:str=os.path.join(pathlib.Path(__file__).parent.absolute(), "resources/bart_enwiki_BASE-6440b:0:135000")):
         self.tokenizer = BartTokenizer.from_pretrained(path)
         self.model = BartForConditionalGeneration.from_pretrained(path, torchscript=True)
 
