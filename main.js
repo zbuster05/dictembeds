@@ -3,7 +3,9 @@ const { autoUpdater } = require("electron-updater");
 autoUpdater.checkForUpdatesAndNotify();
 const path = require('path');
 const isDev = require('electron-is-dev');
-const pybridge = require("./engine/pybridge");
+
+require("./engine/pybridge");
+require("./engine/filebridge");
 
 setInterval(()=>{
     autoUpdater.checkForUpdatesAndNotify();

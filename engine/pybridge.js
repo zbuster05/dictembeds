@@ -49,4 +49,3 @@ ipcMain.on('pyserver.start', (event, _) => {
     event.reply('pyserver.start__reply', 'success');
 })
 
-module.exports = { setupPyEnv };
