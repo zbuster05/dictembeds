@@ -39,13 +39,25 @@ ipcMain.on('pyenv.check', (event, _) => {
     checkRes ? event.reply('pyenv.check__reply', 'success') : event.reply('pyenv.check__reply', 'failure');
 });
 
+let process = null;
+
 ipcMain.on('pyserver.start', (event, _) => {
     let checkRes = checkForPyEnv();
     if (!checkRes) {
         event.reply('pyserver.start__reply', 'failure');
     }
 
-    let process = startServer();
+    process = startServer();
     event.reply('pyserver.start__reply', 'success');
 })
+
+ipcMain.on('pyserver.stop', (event, _) => {
+    if (!process) {
+        event.reply('pyserver.stop__reply', 'failure');
+    } else {
+        process.kill();
+    }
+
+    event.reply('pyserver.stop__reply', 'success');
+});
 
