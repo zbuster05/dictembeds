@@ -1,0 +1,23 @@
+method: bayes
+metric:
+  goal: minimize
+  name: val_loss
+parameters:
+  base_model:
+    values:
+    - facebook/bart-base
+    - facebook/bart-large
+  batch_size:
+    max: 4
+    min: 1
+  learning_rate:
+    max: 0.0001
+    min: 1e-06
+  max_length:
+    max: 512
+    min: 128
+  num_warmup_steps:
+    max: 4000
+    min: 0
+program: main.py
+
