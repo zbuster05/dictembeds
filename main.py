@@ -9,8 +9,18 @@ from torch.utils.tensorboard import SummaryWriter
 
 import uuid
 import tqdm
+import wandb
 import json
 import os
+
+run = wandb.init(project='dictembed', entity='inscriptio')
+config = wandb.config
+
+config.learning_rate = 5e-5
+config.epochs = 3
+config.num_warmup_steps = 1000
+config.batch_size = 2
+config.base_model = 'facebook/bart-base'
 
 database_at_home = {}
 
@@ -21,7 +31,7 @@ for identifier in tqdm.tqdm(range(45)):
         database_at_home[identifier] = data_loaded
 
 
-tokenizer = BartTokenizer.from_pretrained("facebook/bart-base")
+tokenizer = BartTokenizer.from_pretrained(config.base_model)
 
 class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
     def __init__(self, tokenizer, directory="./data", filebasename="enwiki-parsed_", mod=65536, total=45):
@@ -64,7 +74,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
     def __len__(self):
         return self.mod*self.total
 
-model = BartForConditionalGeneration.from_pretrained("facebook/bart-base")
+model = BartForConditionalGeneration.from_pretrained(config.base_model)
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -72,34 +82,43 @@ model.to(device)
 # model.resize_token_embeddings(len(tokenizer))
 
 model.train()
+run.watch(model)
 
 train_dataset = EnWikiKeywordSentsDataset(tokenizer)
-train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
 
 # optim = AdamW([
     # {"params": model.transformer.h.parameters(), "lr": 5e-6},
         # {"params": model.lm_head.parameters(), "lr": 1e-5},
     # ], lr=1e-5)
 
-optim = AdamW(model.parameters(), lr=5e-5)
-scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = 1000, num_training_steps = 3*len(train_loader))
+
+optim = AdamW(model.parameters(), lr=config.learning_rate)
+scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = 3*len(train_loader))
 
 modelID = str(uuid.uuid4())[-5:]
+
+# artifact = wandb.Artifact('enwiki-parsed', type='dataset', description="enwiki titles, first paragraphs, and first sentences used for training")
+# artifact.add_dir("./data")
+# run.log_artifact(artifact)
 
 print("Ready to go. On your call!")
 breakpoint()
 
 # https://huggingface.co/transformers/custom_datasets.html?highlight=fine%20tuning
 # model.resize_token_embeddings(len(tokenizer))
-for epoch in range(3):
+for epoch in range(config.epochs):
     databatched_loader = tqdm.tqdm(train_loader)
 
-    writer = SummaryWriter(f'./training/{modelID}')
+    # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
         
-        if (i % 50000 == 0):
-            tokenizer.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
-            model.save_pretrained(f"./training/bart_enwiki_BASE-{modelID}:{epoch}:{i}")
+        if (i % 50000 == 0 and i != 0):
+            artifact = wandb.Artifact('bart_enwiki-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
+            tokenizer.save_pretrained(f"./training/bart_enwiki-kw_summary-{modelID}:{epoch}:{i}")
+            model.save_pretrained(f"./training/bart_enwiki-kw_summary-{modelID}:{epoch}:{i}")
+            artifact.add_dir("./training")
+            run.log_artifact(artifact)
 
         optim.zero_grad()
 
@@ -120,7 +139,7 @@ for epoch in range(3):
         scheduler.step()
 
 
-        writer.add_scalar('Train/loss', loss.item(), i+(epoch*len(databatched_loader)))
+        # writer.add_scalar('Train/loss', loss.item(), i+(epoch*len(databatched_loader)))
 
         oneAnswer = torch.argmax(logits[0], dim=1)
         answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
@@ -136,11 +155,19 @@ for epoch in range(3):
         inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
         inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
 
-        writer.add_text('Train/sample', 
-                "<logits>"+answer+"</logits>\n\n"+
-                "<labels>"+desiredAnswer+"</labels>\n\n"+
-                "<src>"+inputWord+"</src>\n",
-            i+(epoch*len(databatched_loader)))
+        if (i % 200 == 0 and i != 0):
+            run.log({"loss": loss.item(), "epoch": epoch,
+                       "input": wandb.Html(inputWord),
+                       "logits": wandb.Histogram(logits[0].detach().cpu()),
+                       "output": wandb.Html(answer),
+                       "target": wandb.Html(desiredAnswer)
+                   })
+
+#         writer.add_text('Train/sample', 
+                # "<logits>"+answer+"</logits>\n\n"+
+                # "<labels>"+desiredAnswer+"</labels>\n\n"+
+                # "<src>"+inputWord+"</src>\n",
+            # i+(epoch*len(databatched_loader)))
 
     # model.save_pretrained(f"./training/bart_enwiki_{epoch}-{modelID}")
 
