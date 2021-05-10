@@ -1,9 +1,0 @@
-@import './custom/theme_light.css';
-@import './custom/theme_dark.css' screen and (prefers-color-scheme: dark);
-
-.topbar {
-    -webkit-app-region: drag;
-
-    @apply bg-background-contrast h-9 text-white flex justify-center align-middle
-}
-

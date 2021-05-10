@@ -15,7 +15,7 @@ import os
 database_at_home = {}
 
 for identifier in tqdm.tqdm(range(45)):
-    filename = f"./enwiki_parsed_titles/enwiki-parsed_{identifier}.json"
+    filename = f"./data/enwiki-parsed_{identifier}.json"
     with open(filename, "r") as df:
         data_loaded = json.load(df)
         database_at_home[identifier] = data_loaded
@@ -24,7 +24,7 @@ for identifier in tqdm.tqdm(range(45)):
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-base")
 
 class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
-    def __init__(self, tokenizer, directory="./enwiki_parsed", filebasename="enwiki-parsed_", mod=65536, total=45):
+    def __init__(self, tokenizer, directory="./data", filebasename="enwiki-parsed_", mod=65536, total=45):
         self.filepath = os.path.join(directory, filebasename)
         self.mod = mod
         self.total = total
