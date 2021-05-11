@@ -105,6 +105,7 @@ optim = AdamW(model.parameters(), lr=config.learning_rate)
 scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = 3*len(train_loader))
 
 modelID = str(uuid.uuid4())[-5:]
+config["modelID"] = modelID
 
 # artifact = wandb.Artifact('enwiki-parsed', type='dataset', description="enwiki titles, first paragraphs, and first sentences used for training")
 # artifact.add_dir("./data")
@@ -125,7 +126,7 @@ for epoch in range(1):
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
         
-        if (i % 50000 == 0 and i != 0):
+        if (i % 40000 == 0 and i != 0):
             artifact = wandb.Artifact('bart_enwiki-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_enwiki-kw_summary-{modelID}:{epoch}:{i}")
             model.save_pretrained(f"./training/bart_enwiki-kw_summary-{modelID}:{epoch}:{i}")
