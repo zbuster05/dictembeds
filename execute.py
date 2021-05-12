@@ -76,10 +76,8 @@ class Engine:
         return self.batch_embed([[word, context]])[0]
 
 e = Engine(model_path=model_path)
-res1 = e.execute("Meanie", "John is a huge meanie.")
-res2 = e.execute("John", "John is a huge meanie.")
-res3 = e.execute("Chickens", "John is a huge meanie.")
-print(res1, res2, res3)
+res = e.execute("How to solve 'window is not defined' errors in React and Next.js", """Eat a chicken""")
+print(res)
 
 breakpoint()
 
