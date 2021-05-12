@@ -4,6 +4,8 @@
 from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
 import torch
 
+import statistics
+
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -28,6 +30,7 @@ hyperparametre_defaults = dict(
     batch_size = 2,
     max_length = 512,
     base_model = 'facebook/bart-base',
+    epochs = 1,
 )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
@@ -102,7 +105,7 @@ validate_dataset = EnWikiKeywordSentsDataset(tokenizer, max_length=config.max_le
 
 
 optim = AdamW(model.parameters(), lr=config.learning_rate)
-scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = 3*len(train_loader))
+scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = config.epochs*len(train_loader))
 
 modelID = str(uuid.uuid4())[-5:]
 config["modelID"] = modelID
@@ -120,7 +123,11 @@ print("Ready to go. On your call!")
 max_acc = 0
 avg_acc = 0
 
-for epoch in range(1):
+rolling_val_acc = []
+rolling_val_loss = []
+
+
+for epoch in range(config.epochs):
     databatched_loader = tqdm.tqdm(train_loader)
 
     # writer = SummaryWriter(f'./training/{modelID}')
@@ -157,7 +164,16 @@ for epoch in range(1):
 
             acc = c/t
 
-            run.log({"val_loss": val_loss.item(), "val_accuracy": acc})
+            if (len(rolling_val_acc) >= 20):
+                rolling_val_acc.pop(0)
+
+            if (len(rolling_val_loss) >= 20):
+                rolling_val_loss.pop(0)
+
+            rolling_val_acc.push(acc)
+            rolling_val_loss.push(val_loss.item())
+
+            run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc)})
 
         optim.zero_grad()
 
