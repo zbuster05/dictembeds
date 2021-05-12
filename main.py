@@ -170,8 +170,8 @@ for epoch in range(config.epochs):
             if (len(rolling_val_loss) >= 20):
                 rolling_val_loss.pop(0)
 
-            rolling_val_acc.push(acc)
-            rolling_val_loss.push(val_loss.item())
+            rolling_val_acc.append(acc)
+            rolling_val_loss.append(val_loss.item())
 
             run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc)})
 
