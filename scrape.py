@@ -6,7 +6,7 @@ from wiki_dump_reader import Cleaner, iterate
 database = []
 index = {}
 
-prefix = "enwiki"
+prefix = "simplewiki"
 
 cleaner = Cleaner()
 for title, text in iterate(f"./source/{prefix}-latest-pages-articles.xml"):

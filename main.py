@@ -16,8 +16,6 @@ import wandb
 import json
 import os
 
-input("DID YOU SET UP A SWAP FILE WORTH AT LEAST 40GB? ")
-
 hyperparametre_defaults = dict(
     learning_rate = 3.5e-5,
     num_warmup_steps = 1600,
@@ -52,7 +50,7 @@ for i in tqdm.tqdm(range(0,24)):
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
 
-oc_count = int(len(training_data_oc)*config.oc_mix)
+oc_count = int(min(len(training_data_oc), (len(training_data_originals)*config.oc_mix)//(1-config.oc_mix)))
 oc_val_count = int(oc_count*config.val_mix)
 validation_data_oc = training_data_oc[:oc_val_count]
 training_data_oc = training_data_oc[oc_val_count:oc_count]
