@@ -16,50 +16,65 @@ import wandb
 import json
 import os
 
-database_at_home = {}
-
-for identifier in tqdm.tqdm(range(51)):
-    filename = f"./data/enwiki-parsed_{identifier}.json"
-    with open(filename, "r") as df:
-        data_loaded = json.load(df)
-        database_at_home[identifier] = data_loaded
+input("DID YOU SET UP A SWAP FILE WORTH AT LEAST 40GB? ")
 
 hyperparametre_defaults = dict(
-    learning_rate = 5e-5,
-    num_warmup_steps = 1000,
-    batch_size = 2,
-    max_length = 512,
+    learning_rate = 3.5e-5,
+    num_warmup_steps = 1600,
+    batch_size = 4,
+    max_length = 250,
     base_model = 'facebook/bart-base',
     epochs = 1,
+    oc_mix = 0.3,
+    val_mix = 0.1,
+    wiki = 'simplewiki'
 )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
+training_data_originals = []
+
+print("Caching originals data...")
+for i in tqdm.tqdm(range(0,4)):
+    filename = f"./data/{config.wiki}-parsed-oc-MD{i}.json"
+    with open(filename, "r") as df:
+        training_data_originals = training_data_originals + json.load(df)
+
+validation_count = int(len(training_data_originals)*config.val_mix)
+validation_data_originals = training_data_originals[:validation_count]
+training_data_originals = training_data_originals[validation_count:]
+
+training_data_oc = []
+print("Caching OC data...")
+for i in tqdm.tqdm(range(0,24)):
+    filename = f"./data/{config.wiki}-parsed-oc-OC{i}.json"
+    with open(filename, "r") as df:
+        training_data_oc = training_data_oc + json.load(df)
+
+oc_count = int(len(training_data_oc)*config.oc_mix)
+oc_val_count = int(oc_count*config.val_mix)
+validation_data_oc = training_data_oc[:oc_val_count]
+training_data_oc = training_data_oc[oc_val_count:oc_count]
+
+training_data = training_data_originals+training_data_oc
+validation_data = validation_data_originals+validation_data_oc
 
 tokenizer = BartTokenizer.from_pretrained(config.base_model)
 
 class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
-    def __init__(self, tokenizer, directory="./data", filebasename="enwiki-parsed_", mod=65536, max_length=512, total=45, shift=0):
-        self.filepath = os.path.join(directory, filebasename)
-        self.mod = mod
-        self.total = total
-        self.shift = shift
+    def __init__(self, tokenizer, data, max_length=512):
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.data = data
 
     def __getitem__(self, idx):
         tokenizer = self.tokenizer
         max_length = self.max_length
 
-        fileid = (idx+self.shift*self.mod) // self.mod
-        itemid = (idx+self.shift+self.mod) % self.mod
-
-        data_loaded = database_at_home.get(fileid)
-
-        input_string = data_loaded["contexts"][itemid]
-        output_string = data_loaded["keywords"][itemid]
-        title_string = data_loaded["titles"][itemid]
+        input_string = self.data[idx]["context"]
+        title_string = self.data[idx]["title"]
+        output_string = self.data[idx]["target"]
 
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
@@ -81,7 +96,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded[:max_length]), "decoder_data": torch.LongTensor(decoder_input_encoded[:max_length]), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask[:max_length])}
 
     def __len__(self):
-        return self.mod*(self.total-self.shift)
+        return len(self.data)
 
 model = BartForConditionalGeneration.from_pretrained(config.base_model)
 
@@ -93,10 +108,10 @@ model.to(device)
 model.train()
 run.watch(model)
 
-train_dataset = EnWikiKeywordSentsDataset(tokenizer, max_length=config.max_length, total=3)
+train_dataset = EnWikiKeywordSentsDataset(tokenizer, training_data, config.max_length)
 train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
 
-validate_dataset = EnWikiKeywordSentsDataset(tokenizer, max_length=config.max_length, total=4, shift=3)
+validate_dataset = EnWikiKeywordSentsDataset(tokenizer, validation_data, config.max_length)
 
 # optim = AdamW([
     # {"params": model.transformer.h.parameters(), "lr": 5e-6},
@@ -134,9 +149,9 @@ for epoch in range(config.epochs):
     for i, chicken in enumerate(databatched_loader):
         
         if (i % 40000 == 0 and i != 0):
-            artifact = wandb.Artifact('bart_enwiki-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
-            tokenizer.save_pretrained(f"./training/bart_enwiki-kw_summary-{modelID}:{epoch}:{i}")
-            model.save_pretrained(f"./training/bart_enwiki-kw_summary-{modelID}:{epoch}:{i}")
+            artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
+            tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
+            model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
             artifact.add_dir("./training")
             run.log_artifact(artifact)
 
