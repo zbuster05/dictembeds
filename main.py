@@ -16,6 +16,8 @@ import wandb
 import json
 import os
 
+print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
+
 hyperparametre_defaults = dict(
     learning_rate = 3.5e-5,
     num_warmup_steps = 1600,
