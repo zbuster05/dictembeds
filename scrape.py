@@ -6,7 +6,7 @@ from wiki_dump_reader import Cleaner, iterate
 database = []
 index = {}
 
-prefix = "simplewiki"
+prefix = "enwiki"
 
 cleaner = Cleaner()
 for title, text in iterate(f"./source/{prefix}-latest-pages-articles.xml"):
@@ -21,6 +21,8 @@ for title, text in iterate(f"./source/{prefix}-latest-pages-articles.xml"):
             passage.append(i)
         except IndexError:
             break;
+    if (len(passage) < 3):
+        continue
 
     result = ""
     for i in passage:
@@ -56,6 +58,11 @@ for item in tqdm(database, total=len(database)):
             ldatabase = []
             i += 1
 
+with open(f"./data/{prefix}-parsed-oc-MD{i}.json", "w") as df:
+    df.write(json.dumps(database))
+    ldatabase = []
+    i += 1
+
 ldatabase = []
 i = 0
 for item in tqdm(database, total=len(database)):
@@ -74,6 +81,10 @@ for item in tqdm(database, total=len(database)):
             ldatabase = []
             i += 1
 
+with open(f"./data/{prefix}-parsed-oc-OC{i}.json", "w") as df:
+    df.write(json.dumps(ldatabase))
+    ldatabase = []
+    i += 1
 
 
 breakpoint()
