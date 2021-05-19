@@ -20,12 +20,12 @@ print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT Q
 
 hyperparametre_defaults = dict(
     learning_rate = 3.5e-5,
-    num_warmup_steps = 1600,
+    num_warmup_steps = 4000,
     batch_size = 4,
     max_length = 250,
     base_model = 'facebook/bart-base',
-    epochs = 1,
-    oc_mix = 0.3,
+    epochs = 10,
+    oc_mix = 0.4,
     val_mix = 0.1,
     wiki = 'simplewiki'
 )
