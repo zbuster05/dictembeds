@@ -19,10 +19,10 @@ import os
 print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
 
 hyperparametre_defaults = dict(
-    learning_rate = 3.5e-5,
-    num_warmup_steps = 4000,
-    batch_size = 4,
-    max_length = 250,
+    learning_rate = 4e-5,
+    num_warmup_steps = 2000,
+    batch_size = 2,
+    max_length = 350,
     base_model = 'facebook/bart-base',
     epochs = 10,
     oc_mix = 0.4,
@@ -148,7 +148,7 @@ for epoch in range(config.epochs):
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
         
-        if (i % 40000 == 0 and i != 0):
+        if (i % 5000 == 0 and i != 0):
             artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
             model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
