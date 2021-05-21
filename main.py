@@ -25,7 +25,7 @@ hyperparametre_defaults = dict(
     max_length = 350,
     base_model = 'facebook/bart-base',
     epochs = 10,
-    oc_mix = 0.4,
+    oc_mix = 0.3,
     val_mix = 0.1,
     wiki = 'simplewiki'
 )
@@ -36,7 +36,7 @@ config = wandb.config
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,1)):
+for i in tqdm.tqdm(range(0,25)):
     filename = f"./data/{config.wiki}-parsed-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
@@ -47,7 +47,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,4)):
+for i in tqdm.tqdm(range(0,25)):
     filename = f"./data/{config.wiki}-parsed-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
@@ -96,7 +96,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded[:max_length]), "decoder_data": torch.LongTensor(decoder_input_encoded[:max_length]), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask[:max_length])}
 
     def __len__(self):
-        return len(self.data)
+        return len(self.data)-1
 
 model = BartForConditionalGeneration.from_pretrained(config.base_model)
 
