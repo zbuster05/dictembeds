@@ -12,7 +12,7 @@ import uuid
 import json
 import os
 
-model_path = "./model/bart_simplewiki-kw_summary-eb1b0:3:20000"
+model_path = "./model/bart_simplewiki-kw_summary-cdbe5:0:40000"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -41,9 +41,7 @@ class Engine:
         summary_ids = self.model.generate(
             processed_samples, early_stopping=True, # see an <eos>? stop 
             no_repeat_ngram_size=3, # block 3-grams from appearing abs/1705.04304
-            do_sample=True, # randomly sample...
-            top_k=1000, # from the top 50 words, abs/1805.04833
-            top_p=0.95, # but pick the smallest batch that satisfy 95% of confidance band, abs/1904.09751
+            num_beams=6
         )
         return [self.tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
 
