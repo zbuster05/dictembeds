@@ -79,14 +79,14 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
 
-        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)[:max_length-2]
+        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
         output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
-        if len(output_tokenized) > max_length:
-            return __getitem__(random.randint(0, idx))
+
+        if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
+            return self.__getitem__(random.randint(0, idx))
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(input_tokenized))]
         decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(decoder_input_tokenized))]
-        # output_padded = output_tokenized + [tokenizer.pad_token for _ in range(512-len(output_tokenized))]
 
         input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
         decoder_input_encoded = tokenizer.convert_tokens_to_ids(decoder_input_padded)
@@ -95,7 +95,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
         decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(max_length-len(decoder_input_tokenized))]
 
-        return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded[:max_length]), "decoder_data": torch.LongTensor(decoder_input_encoded[:max_length]), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask[:max_length])}
+        return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded), "decoder_data": torch.LongTensor(decoder_input_encoded), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask[:max_length])}
 
     def __len__(self):
         return len(self.data)-1
