@@ -30,7 +30,7 @@ class Engine:
                 [self.tokenizer.bos_token] + 
                 self.tokenizer.tokenize(article.lower()) + 
                 [self.tokenizer.sep_token] + 
-                self.tokenizer.tokenize(context.lower()) + 
+                self.tokenizer.tokenize(context) + 
                 [self.tokenizer.eos_token])
 
     def generate_encoder_emb(self, processed_samples:[torch.Tensor]):
