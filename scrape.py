@@ -3,6 +3,8 @@ import json
 from tqdm import tqdm
 from wiki_dump_reader import Cleaner, iterate
 
+from nltk.tokenize import sent_tokenize
+
 database = []
 index = {}
 
@@ -37,7 +39,7 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"))
     for i in links:
         linkdb.append(i["link"])
 
-    splits = re.compile("(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s").split(result)
+    splits = sent_tokenize(result)
     front = splits.pop(0)
 
     result = ""

@@ -19,13 +19,13 @@ import os
 print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
 
 hyperparametre_defaults = dict(
-        learning_rate = 6e-5,
-        num_warmup_steps = 4500,
-        batch_size = 3,
-        max_length = 350,
+        learning_rate = 2e-5,
+        num_warmup_steps = 5000,
+        batch_size = 1,
+        max_length = 500,
         base_model = 'facebook/bart-base',
-        epochs = 10,
-        oc_mix = 0.3,
+        epochs = 2,
+        oc_mix = 0.2,
         val_mix = 0.1,
         wiki = 'enwiki'
     )
@@ -36,7 +36,7 @@ config = wandb.config
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,20)):
+for i in tqdm.tqdm(range(0,25)):
     filename = f"./data/{config.wiki}-parsed-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
@@ -47,7 +47,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,20)):
+for i in tqdm.tqdm(range(0,25)):
     filename = f"./data/{config.wiki}-parsed-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
@@ -72,19 +72,21 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         tokenizer = self.tokenizer
         max_length = self.max_length
 
-        input_string = self.data[idx]["context"]
-        title_string = self.data[idx]["title"]
+        input_string = self.data[idx]["context"].lower()
+        title_string = self.data[idx]["title"].lower()
         output_string = self.data[idx]["target"]
 
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
 
-        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)[:max_length-2]
-        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string)[:max_length-2] + [tokenizer.eos_token]
+        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
+        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
+
+        if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
+            return self.__getitem__(random.randint(0, idx))
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(input_tokenized))]
         decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(decoder_input_tokenized))]
-        # output_padded = output_tokenized + [tokenizer.pad_token for _ in range(512-len(output_tokenized))]
 
         input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
         decoder_input_encoded = tokenizer.convert_tokens_to_ids(decoder_input_padded)
@@ -93,7 +95,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
         decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(max_length-len(decoder_input_tokenized))]
 
-        return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded[:max_length]), "decoder_data": torch.LongTensor(decoder_input_encoded[:max_length]), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask[:max_length])}
+        return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded), "decoder_data": torch.LongTensor(decoder_input_encoded), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask[:max_length])}
 
     def __len__(self):
         return len(self.data)-1
@@ -148,7 +150,7 @@ for epoch in range(config.epochs):
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
         
-        if (i % 50000 == 0 and i != 0):
+        if (i % 5000 == 0 and i != 0):
             artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
             model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
