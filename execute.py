@@ -12,7 +12,7 @@ import uuid
 import json
 import os
 
-model_path = "./model/bart_simplewiki-kw_summary-cdbe5:0:40000"
+model_path = "./model/bart_enwiki-kw_summary-f4afb:0:25000"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -28,9 +28,9 @@ class Engine:
     def __pre_process_sample(self, article:str="", context:str=""):
         return self.tokenizer.convert_tokens_to_ids(
                 [self.tokenizer.bos_token] + 
-                self.tokenizer.tokenize(article) + 
+                self.tokenizer.tokenize(article.lower()) + 
                 [self.tokenizer.sep_token] + 
-                self.tokenizer.tokenize(context) + 
+                self.tokenizer.tokenize(context.lower()) + 
                 [self.tokenizer.eos_token])
 
     def generate_encoder_emb(self, processed_samples:[torch.Tensor]):
@@ -39,9 +39,12 @@ class Engine:
     def generate_syntheses(self, processed_samples:[torch.Tensor]): 
         # https://huggingface.co/blog/how-to-generate
         summary_ids = self.model.generate(
-            processed_samples, early_stopping=True, # see an <eos>? stop 
+            processed_samples,
             no_repeat_ngram_size=3, # block 3-grams from appearing abs/1705.04304
-            num_beams=6
+            # num_beams=2,
+            do_sample=True,
+            top_k = 30,
+            top_p = 0.80
         )
         return [self.tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
 
