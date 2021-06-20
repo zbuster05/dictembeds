@@ -38,16 +38,15 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"),
         linkdb.append(i["link"])
 
     splits = re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", result)
+    front_raw = splits.pop(0)
 
     # things in the parens often suck.
-    front = re.sub("  ", " ", re.sub(r"\(.*?\)", "", splits.pop(0))) 
+    front = re.sub("  ", " ", re.sub(r"\(.*?\)", "", front_raw)) 
 
     if (len(splits) < 5):
         continue
 
-    result = ""
-    for i in splits:
-        result = result+i+" "
+    result =  result.replace(front_raw, "")
     result = result.strip()
 
     database.append({"title": title, "context": result, "target": front, "links": linkdb, "oncontext": True})
