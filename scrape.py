@@ -8,10 +8,11 @@ from nltk.tokenize import sent_tokenize
 database = []
 index = {}
 
-prefix = "enwiki"
+prefix = "simplewiki"
 
 cleaner = Cleaner()
-for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"), total=21181268):
+# for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"), total=21181268):
+for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"), total=346229):
     text = cleaner.clean_text(text)
     cleaned_text, links = cleaner.build_links(text)
     
