@@ -158,11 +158,11 @@ for epoch in range(config.epochs):
     for i, chicken in enumerate(databatched_loader):
         
         if (i % 10000 == 0 and i != 0):
-            artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
+            # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
             model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
-            artifact.add_dir("./training")
-            run.log_artifact(artifact)
+            # artifact.add_dir("./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
+            # run.log_artifact(artifact)
 
         if (i % 100 == 0):
             validation_index = random.randint(0, len(validate_dataset))
