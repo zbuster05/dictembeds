@@ -2,7 +2,7 @@
 # pylint: disable=no-member
 
 from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
-from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
 
 import statistics
@@ -62,6 +62,9 @@ training_data = training_data_originals+training_data_oc
 validation_data = validation_data_originals+validation_data_oc
 
 tokenizer = BartTokenizer.from_pretrained(config.base_model)
+
+# https://stackoverflow.com/questions/46444656/bleu-scores-could-i-use-nltk-translate-bleu-score-sentence-bleu-for-calculating
+smoothie = SmoothingFunction().method4
 
 class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
     def __init__(self, tokenizer, data, max_length=512):
@@ -193,7 +196,7 @@ for epoch in range(config.epochs):
             # w = (oneAnswer != targetSec).sum().item()
 
             acc = c/t
-            bleu = sentence_bleu([[a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token]], answer)
+            bleu = sentence_bleu([[a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token]], answer, smoothing_function=smoothie)
 
             if (len(rolling_val_acc) >= 20):
                 rolling_val_acc.pop(0)
@@ -254,7 +257,7 @@ for epoch in range(config.epochs):
         inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
         inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
 
-        bleu = sentence_bleu([answer_token_clear], [a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
+        bleu = sentence_bleu([answer_token_clear], [a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token], smoothing_function=smoothie)
         avg_bleu = (avg_bleu+bleu)/2
         max_bleu = max(max_bleu, bleu)
 
