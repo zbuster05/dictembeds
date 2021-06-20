@@ -28,7 +28,7 @@ hyperparametre_defaults = dict(
         epochs = 2,
         oc_mix = 0.2,
         val_mix = 0.1,
-        wiki = 'simplewiki'
+        wiki = 'enwiki'
     )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
@@ -37,7 +37,7 @@ config = wandb.config
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,1)):
+for i in tqdm.tqdm(range(0,10)):
     filename = f"./data/{config.wiki}-parsed-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
@@ -48,7 +48,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,1)):
+for i in tqdm.tqdm(range(0,10)):
     filename = f"./data/{config.wiki}-parsed-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
