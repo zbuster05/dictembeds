@@ -2,6 +2,7 @@
 # pylint: disable=no-member
 
 from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
+from nltk.translate.bleu_score import sentence_bleu
 import torch
 
 import statistics
@@ -140,9 +141,12 @@ print("Ready to go. On your call!")
 max_acc = 0
 avg_acc = 0
 
+max_bleu = 0
+avg_bleu = 0
+
 rolling_val_acc = []
 rolling_val_loss = []
-
+rolling_val_bleu = []
 
 for epoch in range(config.epochs):
     databatched_loader = tqdm.tqdm(train_loader)
@@ -171,6 +175,15 @@ for epoch in range(config.epochs):
             targetSec = val_d_output[0]
 
             oneAnswer = torch.argmax(result["logits"][0], dim=1)
+            answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
+
+            try: 
+                answer = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
+            except ValueError:
+                answer = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
+
+            desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(validation_sample['decoder_data'])
+
             t = targetSec.size(0)
 
             t = targetSec[targetSec!=-100].size(0)
@@ -180,6 +193,7 @@ for epoch in range(config.epochs):
             # w = (oneAnswer != targetSec).sum().item()
 
             acc = c/t
+            bleu = sentence_bleu([[a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token]], answer)
 
             if (len(rolling_val_acc) >= 20):
                 rolling_val_acc.pop(0)
@@ -187,10 +201,14 @@ for epoch in range(config.epochs):
             if (len(rolling_val_loss) >= 20):
                 rolling_val_loss.pop(0)
 
+            if (len(rolling_val_bleu) >= 20):
+                rolling_val_bleu.pop(0)
+
             rolling_val_acc.append(acc)
             rolling_val_loss.append(val_loss.item())
+            rolling_val_bleu.append(bleu)
 
-            run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc)})
+            run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
 
         optim.zero_grad()
 
@@ -224,9 +242,11 @@ for epoch in range(config.epochs):
         max_acc = max(max_acc, acc)
 
         try: 
-            answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token])
+            answer_token_clear = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
+            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
         except ValueError:
-            answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens[1:] if a != tokenizer.pad_token])
+            answer_token_clear = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
+            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
 
         desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(decoder_data[0])
         desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
@@ -234,9 +254,14 @@ for epoch in range(config.epochs):
         inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
         inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
 
+        bleu = sentence_bleu([answer_token_clear], [a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
+        avg_bleu = (avg_bleu+bleu)/2
+        max_bleu = max(max_bleu, bleu)
+
         if (i % 10 == 0):
             run.log({"loss": loss.item(),
                      "accuracy": acc,
+                     "bleu": bleu,
                      "input": wandb.Html(inputWord),
                      "logits": wandb.Histogram(logits[0].detach().cpu()),
                      "output": wandb.Html(answer),
@@ -245,6 +270,9 @@ for epoch in range(config.epochs):
 
             run.summary["max_accuracy"] = max_acc
             run.summary["avg_accuracy"] = avg_acc
+
+            run.summary["max_bleu"] = max_bleu
+            run.summary["avg_bleu"] = avg_bleu
 
 #         writer.add_text('Train/sample', 
                 # "<logits>"+answer+"</logits>\n\n"+
