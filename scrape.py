@@ -11,7 +11,8 @@ index = {}
 prefix = "enwiki"
 
 cleaner = Cleaner()
-for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml")):
+for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"), total=21181268):
+# for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"), total=346229):
     text = cleaner.clean_text(text)
     cleaned_text, links = cleaner.build_links(text)
     
@@ -24,7 +25,7 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"))
         except IndexError:
             break;
 
-    if (len(passage) < 3):
+    if (len(passage) < 4):
         continue
 
     result = ""
@@ -32,19 +33,20 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"))
         result = result+i+" "
     result = result.strip()
 
-    if (len(result) < 10):
-        continue
-
     linkdb = []
     for i in links:
         linkdb.append(i["link"])
 
-    splits = sent_tokenize(result)
-    front = splits.pop(0)
+    splits = re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", result)
+    front_raw = splits.pop(0)
 
-    result = ""
-    for i in splits:
-        result = result+i+" "
+    # things in the parens often suck.
+    front = re.sub("  ", " ", re.sub(r"\(.*?\)", "", front_raw)) 
+
+    if (len(splits) < 5):
+        continue
+
+    result =  result.replace(front_raw, "")
     result = result.strip()
 
     database.append({"title": title, "context": result, "target": front, "links": linkdb, "oncontext": True})

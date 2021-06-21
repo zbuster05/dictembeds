@@ -2,6 +2,7 @@
 # pylint: disable=no-member
 
 from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
 
 import statistics
@@ -24,10 +25,10 @@ hyperparametre_defaults = dict(
         batch_size = 1,
         max_length = 500,
         base_model = 'facebook/bart-base',
-        epochs = 2,
         oc_mix = 0.2,
         val_mix = 0.1,
-        wiki = 'enwiki'
+        wiki = 'enwiki',
+        max_steps = 100000
     )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
@@ -36,7 +37,7 @@ config = wandb.config
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,25)):
+for i in tqdm.tqdm(range(0,10)):
     filename = f"./data/{config.wiki}-parsed-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
@@ -47,7 +48,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,25)):
+for i in tqdm.tqdm(range(0,10)):
     filename = f"./data/{config.wiki}-parsed-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
@@ -62,6 +63,9 @@ validation_data = validation_data_originals+validation_data_oc
 
 tokenizer = BartTokenizer.from_pretrained(config.base_model)
 
+# https://stackoverflow.com/questions/46444656/bleu-scores-could-i-use-nltk-translate-bleu-score-sentence-bleu-for-calculating
+smoothie = SmoothingFunction().method4
+
 class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
     def __init__(self, tokenizer, data, max_length=512):
         self.tokenizer = tokenizer
@@ -72,7 +76,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         tokenizer = self.tokenizer
         max_length = self.max_length
 
-        input_string = self.data[idx]["context"].lower()
+        input_string = self.data[idx]["context"]
         title_string = self.data[idx]["title"].lower()
         output_string = self.data[idx]["target"]
 
@@ -95,7 +99,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
         decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(max_length-len(decoder_input_tokenized))]
 
-        return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded), "decoder_data": torch.LongTensor(decoder_input_encoded), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask[:max_length])}
+        return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded), "decoder_data": torch.LongTensor(decoder_input_encoded), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask)}
 
     def __len__(self):
         return len(self.data)-1
@@ -122,7 +126,7 @@ validate_dataset = EnWikiKeywordSentsDataset(tokenizer, validation_data, config.
 
 
 optim = AdamW(model.parameters(), lr=config.learning_rate)
-scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = config.epochs*len(train_loader))
+scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = config.max_steps)
 
 modelID = str(uuid.uuid4())[-5:]
 config["modelID"] = modelID
@@ -140,22 +144,27 @@ print("Ready to go. On your call!")
 max_acc = 0
 avg_acc = 0
 
+max_bleu = 0
+avg_bleu = 0
+
 rolling_val_acc = []
 rolling_val_loss = []
+rolling_val_bleu = []
 
+epochs = 0
+steps = 0
 
-for epoch in range(config.epochs):
+while steps < config.max_steps:
     databatched_loader = tqdm.tqdm(train_loader)
 
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
-        
-        if (i % 5000 == 0 and i != 0):
-            artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
+        if (i % 10000 == 0 and i != 0):
+            # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
             model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
-            artifact.add_dir("./training")
-            run.log_artifact(artifact)
+            # artifact.add_dir("./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
+            # run.log_artifact(artifact)
 
         if (i % 100 == 0):
             validation_index = random.randint(0, len(validate_dataset))
@@ -171,6 +180,15 @@ for epoch in range(config.epochs):
             targetSec = val_d_output[0]
 
             oneAnswer = torch.argmax(result["logits"][0], dim=1)
+            answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
+
+            try: 
+                answer = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
+            except ValueError:
+                answer = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
+
+            desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(validation_sample['decoder_data'])
+
             t = targetSec.size(0)
 
             t = targetSec[targetSec!=-100].size(0)
@@ -180,6 +198,7 @@ for epoch in range(config.epochs):
             # w = (oneAnswer != targetSec).sum().item()
 
             acc = c/t
+            bleu = sentence_bleu([[a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token]], answer, smoothing_function=smoothie)
 
             if (len(rolling_val_acc) >= 20):
                 rolling_val_acc.pop(0)
@@ -187,10 +206,14 @@ for epoch in range(config.epochs):
             if (len(rolling_val_loss) >= 20):
                 rolling_val_loss.pop(0)
 
+            if (len(rolling_val_bleu) >= 20):
+                rolling_val_bleu.pop(0)
+
             rolling_val_acc.append(acc)
             rolling_val_loss.append(val_loss.item())
+            rolling_val_bleu.append(bleu)
 
-            run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc)})
+            run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
 
         optim.zero_grad()
 
@@ -224,9 +247,11 @@ for epoch in range(config.epochs):
         max_acc = max(max_acc, acc)
 
         try: 
-            answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token])
+            answer_token_clear = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
+            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
         except ValueError:
-            answer = tokenizer.convert_tokens_to_string([a for a in answer_tokens[1:] if a != tokenizer.pad_token])
+            answer_token_clear = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
+            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
 
         desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(decoder_data[0])
         desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
@@ -234,18 +259,38 @@ for epoch in range(config.epochs):
         inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
         inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
 
+        bleu = sentence_bleu([answer_token_clear], [a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token], smoothing_function=smoothie)
+        avg_bleu = (avg_bleu+bleu)/2
+        max_bleu = max(max_bleu, bleu)
+
         if (i % 10 == 0):
-            run.log({"loss": loss.item(),
-                     "accuracy": acc,
-                     "input": wandb.Html(inputWord),
-                     "logits": wandb.Histogram(logits[0].detach().cpu()),
-                     "output": wandb.Html(answer),
-                     "target": wandb.Html(desiredAnswer)
-                   })
+            try: 
+                run.log({"loss": loss.item(),
+                         "accuracy": acc,
+                         "bleu": bleu,
+                         "input": wandb.Html(inputWord),
+                         "logits": wandb.Histogram(logits[0].detach().cpu()),
+                         "output": wandb.Html(answer),
+                         "target": wandb.Html(desiredAnswer)
+                       })
 
-            run.summary["max_accuracy"] = max_acc
-            run.summary["avg_accuracy"] = avg_acc
+                run.summary["max_accuracy"] = max_acc
+                run.summary["avg_accuracy"] = avg_acc
 
+                run.summary["max_bleu"] = max_bleu
+                run.summary["avg_bleu"] = avg_bleu
+                
+                run.summary["epochs"] = epochs
+
+            except IsADirectoryError:
+                print("um.")
+
+        steps += 1
+
+        if steps >= config.max_steps:
+            break
+
+    epochs += 1
 #         writer.add_text('Train/sample', 
                 # "<logits>"+answer+"</logits>\n\n"+
                 # "<labels>"+desiredAnswer+"</labels>\n\n"+
