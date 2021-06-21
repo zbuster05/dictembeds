@@ -25,10 +25,10 @@ hyperparametre_defaults = dict(
         batch_size = 1,
         max_length = 500,
         base_model = 'facebook/bart-base',
-        epochs = 2,
         oc_mix = 0.2,
         val_mix = 0.1,
-        wiki = 'enwiki'
+        wiki = 'enwiki',
+        max_steps = 100000
     )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
@@ -151,12 +151,14 @@ rolling_val_acc = []
 rolling_val_loss = []
 rolling_val_bleu = []
 
-for epoch in range(config.epochs):
+epochs = 0
+steps = 0
+
+while True:
     databatched_loader = tqdm.tqdm(train_loader)
 
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
-        
         if (i % 10000 == 0 and i != 0):
             # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
@@ -277,10 +279,18 @@ for epoch in range(config.epochs):
 
                 run.summary["max_bleu"] = max_bleu
                 run.summary["avg_bleu"] = avg_bleu
+                
+                run.summary["epochs"] = epochs
 
             except IsADirectoryError:
                 print("um.")
 
+        steps += 1
+
+        if steps >= config.max_steps:
+            break
+
+    epochs += 1
 #         writer.add_text('Train/sample', 
                 # "<logits>"+answer+"</logits>\n\n"+
                 # "<labels>"+desiredAnswer+"</labels>\n\n"+
