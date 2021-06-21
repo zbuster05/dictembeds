@@ -154,7 +154,7 @@ rolling_val_bleu = []
 epochs = 0
 steps = 0
 
-while True:
+while steps >= config.max_steps :
     databatched_loader = tqdm.tqdm(train_loader)
 
     # writer = SummaryWriter(f'./training/{modelID}')
