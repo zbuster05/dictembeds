@@ -126,7 +126,7 @@ validate_dataset = EnWikiKeywordSentsDataset(tokenizer, validation_data, config.
 
 
 optim = AdamW(model.parameters(), lr=config.learning_rate)
-scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = config.epochs*len(train_loader))
+scheduler = get_cosine_schedule_with_warmup(optim, num_warmup_steps = config.num_warmup_steps, num_training_steps = config.max_steps)
 
 modelID = str(uuid.uuid4())[-5:]
 config["modelID"] = modelID
