@@ -262,20 +262,24 @@ for epoch in range(config.epochs):
         max_bleu = max(max_bleu, bleu)
 
         if (i % 10 == 0):
-            run.log({"loss": loss.item(),
-                     "accuracy": acc,
-                     "bleu": bleu,
-                     "input": wandb.Html(inputWord),
-                     "logits": wandb.Histogram(logits[0].detach().cpu()),
-                     "output": wandb.Html(answer),
-                     "target": wandb.Html(desiredAnswer)
-                   })
+            try: 
+                run.log({"loss": loss.item(),
+                         "accuracy": acc,
+                         "bleu": bleu,
+                         "input": wandb.Html(inputWord),
+                         "logits": wandb.Histogram(logits[0].detach().cpu()),
+                         "output": wandb.Html(answer),
+                         "target": wandb.Html(desiredAnswer)
+                       })
 
-            run.summary["max_accuracy"] = max_acc
-            run.summary["avg_accuracy"] = avg_acc
+                run.summary["max_accuracy"] = max_acc
+                run.summary["avg_accuracy"] = avg_acc
 
-            run.summary["max_bleu"] = max_bleu
-            run.summary["avg_bleu"] = avg_bleu
+                run.summary["max_bleu"] = max_bleu
+                run.summary["avg_bleu"] = avg_bleu
+
+            except IsADirectoryError:
+                print("um.")
 
 #         writer.add_text('Train/sample', 
                 # "<logits>"+answer+"</logits>\n\n"+
