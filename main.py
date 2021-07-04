@@ -9,7 +9,9 @@ import statistics
 
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-
+# magit test
+# more than one line for some reason
+# in different places
 import random
 import uuid
 import tqdm
@@ -29,7 +31,7 @@ hyperparametre_defaults = dict(
         val_mix = 0.1,
         wiki = 'enwiki',
         max_steps = 100000
-    )
+    ) # many different places
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
