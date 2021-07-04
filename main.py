@@ -20,15 +20,15 @@ import os
 print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
 
 hyperparametre_defaults = dict(
-        learning_rate = 1e-5,
-        num_warmup_steps = 1500,
-        batch_size = 4,
-        max_length = 550,
+        learning_rate = 7e-5,
+        num_warmup_steps = 3000,
+        batch_size = 3,
+        max_length = 350,
         base_model = 'facebook/bart-base',
         oc_mix = 0.3,
         val_mix = 0.1,
         wiki = 'enwiki',
-        max_steps = 30000
+        max_steps = 80000
     )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
