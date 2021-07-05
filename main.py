@@ -20,15 +20,15 @@ import os
 print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
 
 hyperparametre_defaults = dict(
-        learning_rate = 2e-5,
-        num_warmup_steps = 5000,
-        batch_size = 1,
-        max_length = 500,
+        learning_rate = 7e-5,
+        num_warmup_steps = 3000,
+        batch_size = 3,
+        max_length = 350,
         base_model = 'facebook/bart-base',
-        oc_mix = 0.2,
+        oc_mix = 0.3,
         val_mix = 0.1,
         wiki = 'enwiki',
-        max_steps = 100000
+        max_steps = 80000
     )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
@@ -161,8 +161,8 @@ while steps < config.max_steps:
     for i, chicken in enumerate(databatched_loader):
         if (i % 10000 == 0 and i != 0):
             # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
-            tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
-            model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
+            tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epochs}:{i}")
+            model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epochs}:{i}")
             # artifact.add_dir("./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
             # run.log_artifact(artifact)
 
