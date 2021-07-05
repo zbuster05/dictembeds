@@ -12,7 +12,7 @@ import uuid
 import json
 import os
 
-model_path = "./model/bart_enwiki-kw_summary-0446c:0:50000"
+model_path = "./model/bart_enwiki-kw_summary-04fd6:0:30000"
 
 class Engine:
     def __init__(self, model_path:str):
