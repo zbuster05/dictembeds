@@ -27,6 +27,7 @@ hyperparametre_defaults = dict(
         base_model = 'facebook/bart-base',
         oc_mix = 0.3,
         val_mix = 0.1,
+        noise_mix = 0.1,
         wiki = 'enwiki',
         max_steps = 80000
     )
@@ -73,12 +74,15 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         self.data = data
 
     def __getitem__(self, idx):
+        is_noise = random.uniform(0,1)<config.noise_mix
+        noise_index = random.randint(idx, len(self)-1)
+
         tokenizer = self.tokenizer
         max_length = self.max_length
 
-        input_string = self.data[idx]["context"]
+        input_string = self.data[noise_index if is_noise else idx]["context"] 
         title_string = self.data[idx]["title"].lower()
-        output_string = self.data[idx]["target"]
+        output_string = "<CND>" if is_noise else self.data[idx]["target"]
 
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
@@ -99,7 +103,10 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
         decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(max_length-len(decoder_input_tokenized))]
 
-        return {"input_data": torch.LongTensor(input_encoded[:max_length]), "output_data": torch.LongTensor(output_encoded), "decoder_data": torch.LongTensor(decoder_input_encoded), "input_mask": torch.LongTensor(input_mask[:max_length]), "decoder_mask": torch.LongTensor(decoder_mask)}
+        if len(input_encoded) > max_length:
+            return self.__getitem__(random.randint(0, idx))
+
+        return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "decoder_data": torch.LongTensor(decoder_input_encoded), "input_mask": torch.LongTensor(input_mask), "decoder_mask": torch.LongTensor(decoder_mask)}
 
     def __len__(self):
         return len(self.data)-1
@@ -109,7 +116,6 @@ model = BartForConditionalGeneration.from_pretrained(config.base_model)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 model.to(device)
-# model.resize_token_embeddings(len(tokenizer))
 
 model.train()
 run.watch(model)
@@ -154,6 +160,8 @@ rolling_val_bleu = []
 epochs = 0
 steps = 0
 
+min_val_20rolling = 1000
+
 while steps < config.max_steps:
     databatched_loader = tqdm.tqdm(train_loader)
 
@@ -161,8 +169,8 @@ while steps < config.max_steps:
     for i, chicken in enumerate(databatched_loader):
         if (i % 10000 == 0 and i != 0):
             # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
-            tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epochs}:{i}")
-            model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:{epochs}:{i}")
+            tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:ROUTINE::{epochs}:{i}")
+            model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:ROUTINE::{epochs}:{i}")
             # artifact.add_dir("./training/bart_{config.wiki}-kw_summary-{modelID}:{epoch}:{i}")
             # run.log_artifact(artifact)
 
@@ -212,6 +220,16 @@ while steps < config.max_steps:
             rolling_val_acc.append(acc)
             rolling_val_loss.append(val_loss.item())
             rolling_val_bleu.append(bleu)
+
+             # if we have a new min                                  # if we haden't just started
+            if statistics.mean(rolling_val_loss)<min_val_20rolling and i > 10000:
+                min_val_20rolling = statistics.mean(rolling_val_loss)
+
+                # saving "best" weights
+                tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
+                model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
+
+                
 
             run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
 
