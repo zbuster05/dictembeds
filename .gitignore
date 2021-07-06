@@ -291,4 +291,7 @@ enwiki*
 training
 model
 data
+results
+linuxenv
+macenv
 source
