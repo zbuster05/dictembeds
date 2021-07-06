@@ -222,7 +222,7 @@ while steps < config.max_steps:
             rolling_val_bleu.append(bleu)
 
              # if we have a new min                                  # if we haden't just started
-            if statistics.mean(rolling_val_loss)<min_val_20rolling and i > 10000:
+            if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
                 min_val_20rolling = statistics.mean(rolling_val_loss)
 
                 # saving "best" weights
