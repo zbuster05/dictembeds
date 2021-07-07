@@ -38,7 +38,7 @@ config = wandb.config
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,10)):
+for i in tqdm.tqdm(range(0,8)):
     filename = f"./data/{config.wiki}-parsed-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
@@ -49,7 +49,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,10)):
+for i in tqdm.tqdm(range(0,8)):
     filename = f"./data/{config.wiki}-parsed-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
@@ -83,6 +83,9 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_string = self.data[noise_index if is_noise else idx]["context"] 
         title_string = self.data[idx]["title"].lower()
         output_string = "<CND>" if is_noise else self.data[idx]["target"]
+
+        if len(self.data[idx]["target"]) < 25:
+            return self.__getitem__(random.randint(0, idx))
 
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
