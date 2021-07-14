@@ -10,6 +10,7 @@ import statistics
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+import re
 import random
 import uuid
 import tqdm
@@ -25,13 +26,14 @@ hyperparametre_defaults = dict(
         batch_size = 4,
         max_length = 200,
         base_model = 'facebook/bart-base',
-        oc_mix = 0.4,
+        oc_mix = 0.5,
         val_mix = 0.1,
         noise_mix = 0.2,
         wiki = 'enwiki',
         max_steps = 50000
     )
 
+# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
@@ -82,8 +84,8 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
         input_string = self.data[noise_index if is_noise else idx]["context"] 
         title_string = self.data[idx]["title"].lower()
-        output_string = "<CND>" if is_noise else self.data[idx]["target"]
-
+        output_string = "<CND>" if is_noise else re.sub("(&.*?;)", "", re.sub("[{|}]", "", self.data[idx]["target"]))
+ 
         if len(self.data[idx]["target"]) < 25:
             return self.__getitem__(random.randint(0, idx))
 
@@ -91,7 +93,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
 
         decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
-        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
+        output_tokenized = [tokenizer.eos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
 
         if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
             return self.__getitem__(random.randint(0, idx))
