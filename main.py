@@ -24,7 +24,7 @@ hyperparametre_defaults = dict(
         learning_rate = 8e-5,
         num_warmup_steps = 4500,
         batch_size = 4,
-        max_length = 200,
+        max_length = 550,
         base_model = 'facebook/bart-base',
         oc_mix = 0.5,
         val_mix = 0.1,
@@ -92,8 +92,8 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
 
-        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
-        output_tokenized = [tokenizer.eos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
+        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.bos_token] + tokenizer.tokenize(output_string)
+        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
 
         if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
             return self.__getitem__(random.randint(0, idx))
