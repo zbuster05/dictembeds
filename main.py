@@ -92,7 +92,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
 
-        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.bos_token] + tokenizer.tokenize(output_string)
+        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
         output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
 
         if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
