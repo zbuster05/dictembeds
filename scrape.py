@@ -37,7 +37,7 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"),
     for i in links:
         linkdb.append(i["link"])
 
-    splits = re.split(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s", result)
+    splits = sent_tokenize(result)
     front_raw = splits.pop(0)
 
     # things in the parens often suck.
