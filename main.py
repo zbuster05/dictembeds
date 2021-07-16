@@ -26,7 +26,7 @@ print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT Q
 hyperparametre_defaults = dict(
         learning_rate = 8e-5,
         num_warmup_steps = 4500,
-        batch_size = 4,
+        batch_size = 12,
         max_length = 250,
         base_model = 'facebook/bart-base',
         oc_mix = 0.5,
@@ -36,8 +36,8 @@ hyperparametre_defaults = dict(
         max_steps = 50000
     )
 
-# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+#run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
