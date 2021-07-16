@@ -27,7 +27,7 @@ hyperparametre_defaults = dict(
         learning_rate = 8e-5,
         num_warmup_steps = 4500,
         batch_size = 4,
-        max_length = 550,
+        max_length = 250,
         base_model = 'facebook/bart-base',
         oc_mix = 0.5,
         val_mix = 0.1,
@@ -89,7 +89,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         title_string = self.data[idx]["title"].lower()
         output_string = "<CND>" if is_noise else re.sub("(&.*?;)", "", re.sub("[{|}]", "", self.data[idx]["target"]))
  
-        if len(self.data[idx]["target"]) < 25:
+        if len(self.data[idx]["target"]) < 45:
             return self.__getitem__(random.randint(0, idx))
 
         title_tokenized = tokenizer.tokenize(title_string)
