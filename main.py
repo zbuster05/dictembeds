@@ -10,6 +10,7 @@ import statistics
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+import sys
 import re
 import random
 import uuid
@@ -17,6 +18,8 @@ import tqdm
 import wandb
 import json
 import os
+
+sys.setrecursionlimit(200000) 
 
 print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
 
@@ -26,9 +29,9 @@ hyperparametre_defaults = dict(
         batch_size = 4,
         max_length = 250,
         base_model = 'facebook/bart-base',
-        oc_mix = 0.5,
+        oc_mix = 0.1,
         val_mix = 0.1,
-        noise_mix = 0.2,
+        noise_mix = 0,
         wiki = 'enwiki',
         max_steps = 50000
     )
@@ -86,14 +89,17 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         title_string = self.data[idx]["title"].lower()
         output_string = "<CND>" if is_noise else re.sub("(&.*?;)", "", re.sub("[{|}]", "", self.data[idx]["target"]))
 
-        if output_string[-1] not in ['.', '?', '>', '!', '"']:
+        try: 
+            if output_string[-1] not in ['.', '?', '>', '!', '"']:
+                return self.__getitem__(random.randint(0, idx))
+        except IndexError:
             return self.__getitem__(random.randint(0, idx))
  
         if len(self.data[idx]["target"]) < 45:
             return self.__getitem__(random.randint(0, idx))
 
         title_tokenized = tokenizer.tokenize(title_string)
-        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
+        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-3-len(title_tokenized)] + [tokenizer.eos_token]
 
         decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
         output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
