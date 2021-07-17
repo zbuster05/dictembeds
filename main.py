@@ -56,10 +56,10 @@ for i in tqdm.tqdm(range(0,8)):
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
 
-oc_count = int(min(len(training_data_oc), (len(training_data_originals)*config.oc_mix)//(1-config.oc_mix)))
+oc_count = int(min(len(training_data_oc), (len(training_data_originals)//(1-config.oc_mix))*config.oc_mix))
 oc_val_count = int(oc_count*config.val_mix)
 validation_data_oc = training_data_oc[:oc_val_count]
-training_data_oc = training_data_oc[oc_val_count:oc_count]
+training_data_oc = training_data_oc[oc_val_count:oc_val_count+oc_count]
 
 training_data = training_data_originals+training_data_oc
 validation_data = validation_data_originals+validation_data_oc
