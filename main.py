@@ -13,6 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 # more than one line for some reason
 # in different places
 
+import sys
 import re
 import random
 import uuid
@@ -20,6 +21,8 @@ import tqdm
 import wandb
 import json
 import os
+
+sys.setrecursionlimit(200000) 
 
 print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
 
@@ -29,9 +32,9 @@ hyperparametre_defaults = dict(
         batch_size = 12,
         max_length = 250,
         base_model = 'facebook/bart-base',
-        oc_mix = 0.5,
+        oc_mix = 0.1,
         val_mix = 0.1,
-        noise_mix = 0.2,
+        noise_mix = 0,
         wiki = 'enwiki',
         max_steps = 50000
     )
@@ -59,10 +62,10 @@ for i in tqdm.tqdm(range(0,8)):
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
 
-oc_count = int(min(len(training_data_oc), (len(training_data_originals)*config.oc_mix)//(1-config.oc_mix)))
+oc_count = int(min(len(training_data_oc), (len(training_data_originals)//(1-config.oc_mix))*config.oc_mix))
 oc_val_count = int(oc_count*config.val_mix)
 validation_data_oc = training_data_oc[:oc_val_count]
-training_data_oc = training_data_oc[oc_val_count:oc_count]
+training_data_oc = training_data_oc[oc_val_count:oc_val_count+oc_count]
 
 training_data = training_data_originals+training_data_oc
 validation_data = validation_data_originals+validation_data_oc
@@ -88,12 +91,18 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_string = self.data[noise_index if is_noise else idx]["context"] 
         title_string = self.data[idx]["title"].lower()
         output_string = "<CND>" if is_noise else re.sub("(&.*?;)", "", re.sub("[{|}]", "", self.data[idx]["target"]))
+
+        try: 
+            if output_string[-1] not in ['.', '?', '>', '!', '"']:
+                return self.__getitem__(random.randint(0, idx))
+        except IndexError:
+            return self.__getitem__(random.randint(0, idx))
  
         if len(self.data[idx]["target"]) < 45:
             return self.__getitem__(random.randint(0, idx))
 
         title_tokenized = tokenizer.tokenize(title_string)
-        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-2-len(title_tokenized)] + [tokenizer.eos_token]
+        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-3-len(title_tokenized)] + [tokenizer.eos_token]
 
         decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
         output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
