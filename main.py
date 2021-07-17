@@ -85,6 +85,9 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_string = self.data[noise_index if is_noise else idx]["context"] 
         title_string = self.data[idx]["title"].lower()
         output_string = "<CND>" if is_noise else re.sub("(&.*?;)", "", re.sub("[{|}]", "", self.data[idx]["target"]))
+
+        if output_string[-1] not in ['.', '?', '>', '!', '"']:
+            return self.__getitem__(random.randint(0, idx))
  
         if len(self.data[idx]["target"]) < 45:
             return self.__getitem__(random.randint(0, idx))
