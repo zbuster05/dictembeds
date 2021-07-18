@@ -1,7 +1,7 @@
 # type: ignore
 # pylint: disable=no-member
 
-from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
+from transformers import BartConfig, BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
 
@@ -23,8 +23,6 @@ import json
 import os
 
 sys.setrecursionlimit(200000) 
-
-print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
 
 hyperparametre_defaults = dict(
         learning_rate = 8e-5,
@@ -102,36 +100,36 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
             return self.__getitem__(random.randint(0, idx))
 
         title_tokenized = tokenizer.tokenize(title_string)
-        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.mask_token] + tokenizer.tokenize(input_string)[:max_length-3-len(title_tokenized)] + [tokenizer.eos_token]
-
+        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.mask_token] + tokenizer.tokenize(input_string) + [tokenizer.eos_token]
         output_tokenized = tokenizer.encode(output_string)
 
-        if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
+        if len(output_tokenized) > max_length or len(input_tokenized) > max_length:
             return self.__getitem__(random.randint(0, idx))
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(input_tokenized))]
-        decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(decoder_input_tokenized))]
 
         input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
-        output_encoded = tokenizer.convert_tokens_to_ids(output_tokenized) + [-100 for _ in range(max_length-len(output_tokenized))]
+        output_encoded = output_tokenized + [-100 for _ in range(max_length-len(output_tokenized))]
 
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
-        decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(max_length-len(decoder_input_tokenized))]
 
         if len(input_encoded) > max_length:
             return self.__getitem__(random.randint(0, idx))
 
-        return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "input_mask": torch.LongTensor(input_mask), "decoder_mask": torch.LongTensor(decoder_mask)}
+        return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "input_mask": torch.LongTensor(input_mask)}
 
     def __len__(self):
         return len(self.data)-1
 
-model = BartForConditionalGeneration.from_pretrained(config.base_model)
+bart_config = BartConfig.from_pretrained(config.base_model)
+bart_config.output_past = True # https://github.com/huggingface/transformers/issues/3527
+bart_config.task_specific_params["summarization"]["max_length"] = config.max_length
+bart_config.task_specific_params["summarization_cnn"]["max_length"] = config.max_length
+model = BartForConditionalGeneration.from_pretrained(config.base_model, config=bart_config)
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 model.to(device)
-breakpoint()
 
 model.train()
 run.watch(model)
@@ -183,6 +181,7 @@ while steps < config.max_steps:
 
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
+        # if (i % 10000 == 0 and i != 0):
         if (i % 10000 == 0 and i != 0):
             # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:ROUTINE::{epochs}:{i}")
@@ -206,11 +205,14 @@ while steps < config.max_steps:
             answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
 
             try: 
-                answer = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
+                answer_tokens_clear = [a for a in answer_tokens[0:answer_tokens.index("</s>")+1] if a != tokenizer.pad_token]
             except ValueError:
-                answer = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
+                answer_tokens_clear = [a for a in answer_tokens[0:] if a != tokenizer.pad_token]
 
-            desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(validation_sample['output_data'])
+            answer = tokenizer.convert_tokens_to_string(answer_tokens_clear)
+
+            desiredAnswer_tokens = list(filter(lambda x:x, tokenizer.convert_ids_to_tokens(targetSec)))
+            desiredAnswer = tokenizer.convert_tokens_to_string(desiredAnswer_tokens)
 
             t = targetSec.size(0)
 
@@ -221,16 +223,20 @@ while steps < config.max_steps:
             # w = (oneAnswer != targetSec).sum().item()
 
             acc = c/t
-            bleu = sentence_bleu([[a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token]], answer, smoothing_function=smoothie)
+            try: 
+                bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
+            except ValueError:
+                continue
 
-            if (len(rolling_val_acc) >= 20):
-                rolling_val_acc.pop(0)
+            if "<CND>" not in desiredAnswer:
+                if (len(rolling_val_acc) >= 20):
+                    rolling_val_acc.pop(0)
 
-            if (len(rolling_val_loss) >= 20):
-                rolling_val_loss.pop(0)
+                if (len(rolling_val_loss) >= 20):
+                    rolling_val_loss.pop(0)
 
-            if (len(rolling_val_bleu) >= 20):
-                rolling_val_bleu.pop(0)
+                if (len(rolling_val_bleu) >= 20):
+                    rolling_val_bleu.pop(0)
 
             rolling_val_acc.append(acc)
             rolling_val_loss.append(val_loss.item())
@@ -279,19 +285,23 @@ while steps < config.max_steps:
         max_acc = max(max_acc, acc)
 
         try: 
-            answer_token_clear = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
-            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
+            answer_tokens_clear = [a for a in answer_tokens[0:answer_tokens.index("</s>")+1] if a != tokenizer.pad_token]
         except ValueError:
-            answer_token_clear = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
-            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
+            answer_tokens_clear = [a for a in answer_tokens[0:] if a != tokenizer.pad_token]
 
-        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(targetSec)
-        desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
+        answer = tokenizer.convert_tokens_to_string(answer_tokens_clear)
 
-        inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
-        inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
+        desiredAnswer_tokens = list(filter(lambda x:x, tokenizer.convert_ids_to_tokens(targetSec)))
+        desiredAnswer = tokenizer.convert_tokens_to_string(desiredAnswer_tokens)
 
-        bleu = sentence_bleu([answer_token_clear], [a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token], smoothing_function=smoothie)
+        inputWord_tokens = [a for a in tokenizer.convert_ids_to_tokens(input_data[0]) if a != tokenizer.pad_token]
+        inputWord = tokenizer.convert_tokens_to_string(inputWord_tokens)
+
+        try: 
+            bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
+        except ValueError:
+            continue
+
         avg_bleu = (avg_bleu+bleu)/2
         max_bleu = max(max_bleu, bleu)
 
@@ -300,10 +310,10 @@ while steps < config.max_steps:
                 run.log({"loss": loss.item(),
                          "accuracy": acc,
                          "bleu": bleu,
-                         "input": wandb.Html(inputWord),
+                         "input": wandb.Html(inputWord[3:-4]),
                          "logits": wandb.Histogram(logits[0].detach().cpu()),
-                         "output": wandb.Html(answer),
-                         "target": wandb.Html(desiredAnswer)
+                         "output": wandb.Html(answer[3:-4]),
+                         "target": wandb.Html(desiredAnswer[3:-4])
                        })
 
                 run.summary["max_accuracy"] = max_acc
