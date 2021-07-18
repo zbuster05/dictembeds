@@ -1,7 +1,7 @@
 # type: ignore
 # pylint: disable=no-member
 
-from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
+from transformers import BartConfig, BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
 
@@ -118,7 +118,11 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data)-1
 
-model = BartForConditionalGeneration.from_pretrained(config.base_model)
+bart_config = BartConfig.from_pretrained(config.base_model)
+bart_config.output_past = True # https://github.com/huggingface/transformers/issues/3527
+bart_config.task_specific_params["summarization"]["max_length"] = config.max_length
+bart_config.task_specific_params["summarization_cnn"]["max_length"] = config.max_length
+model = BartForConditionalGeneration.from_pretrained(config.base_model, config=bart_config)
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
