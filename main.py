@@ -217,7 +217,10 @@ while steps < config.max_steps:
             # w = (oneAnswer != targetSec).sum().item()
 
             acc = c/t
-            bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
+            try: 
+                bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
+            except ValueError:
+                continue
 
             if "<CND>" not in desiredAnswer:
                 if (len(rolling_val_acc) >= 20):
@@ -288,7 +291,11 @@ while steps < config.max_steps:
         inputWord_tokens = [a for a in tokenizer.convert_ids_to_tokens(input_data[0]) if a != tokenizer.pad_token]
         inputWord = tokenizer.convert_tokens_to_string(inputWord_tokens)
 
-        bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
+        try: 
+            bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
+        except ValueError:
+            continue
+
         avg_bleu = (avg_bleu+bleu)/2
         max_bleu = max(max_bleu, bleu)
 
