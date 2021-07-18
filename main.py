@@ -297,10 +297,10 @@ while steps < config.max_steps:
                 run.log({"loss": loss.item(),
                          "accuracy": acc,
                          "bleu": bleu,
-                         "input": wandb.Html(inputWord),
+                         "input": wandb.Html(inputWord[3:-4]),
                          "logits": wandb.Histogram(logits[0].detach().cpu()),
-                         "output": wandb.Html(answer),
-                         "target": wandb.Html(desiredAnswer)
+                         "output": wandb.Html(answer[3:-4]),
+                         "target": wandb.Html(desiredAnswer[3:-4])
                        })
 
                 run.summary["max_accuracy"] = max_acc
