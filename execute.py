@@ -12,7 +12,7 @@ import uuid
 import json
 import os
 
-model_path = "./training/bart_enwiki-kw_summary-1f3a3:B_VAL::0:20700:0.8451421744772233"
+model_path = "./training/bart_enwiki-kw_summary-9a9b0:ROUTINE::0:5000"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -29,7 +29,7 @@ class Engine:
         return self.tokenizer.convert_tokens_to_ids(
                 [self.tokenizer.bos_token] + 
                 self.tokenizer.tokenize(article.lower()) + 
-                [self.tokenizer.sep_token] + 
+                [self.tokenizer.mask_token] + 
                 self.tokenizer.tokenize(context) + 
                 [self.tokenizer.eos_token])
 

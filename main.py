@@ -176,7 +176,7 @@ while steps < config.max_steps:
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
         # if (i % 10000 == 0 and i != 0):
-        if (i % 5000 == 0 and i != 0):
+        if (i % 10000 == 0 and i != 0):
             # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:ROUTINE::{epochs}:{i}")
             model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:ROUTINE::{epochs}:{i}")
