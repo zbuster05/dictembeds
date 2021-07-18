@@ -31,7 +31,7 @@ hyperparametre_defaults = dict(
         base_model = 'facebook/bart-base',
         oc_mix = 0.1,
         val_mix = 0.1,
-        noise_mix = 0,
+        noise_mix = 0.1,
         wiki = 'enwiki',
         max_steps = 50000
     )
@@ -99,10 +99,9 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
             return self.__getitem__(random.randint(0, idx))
 
         title_tokenized = tokenizer.tokenize(title_string)
-        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.sep_token] + tokenizer.tokenize(input_string)[:max_length-3-len(title_tokenized)] + [tokenizer.eos_token]
+        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.mask_token] + tokenizer.tokenize(input_string)[:max_length-3-len(title_tokenized)] + [tokenizer.eos_token]
 
-        decoder_input_tokenized = [tokenizer.pad_token] + [tokenizer.eos_token] + tokenizer.tokenize(output_string)
-        output_tokenized = [tokenizer.bos_token] + tokenizer.tokenize(output_string) + [tokenizer.eos_token]
+        output_tokenized = tokenizer.encode(output_string)
 
         if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
             return self.__getitem__(random.randint(0, idx))
@@ -111,7 +110,6 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(decoder_input_tokenized))]
 
         input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
-        decoder_input_encoded = tokenizer.convert_tokens_to_ids(decoder_input_padded)
         output_encoded = tokenizer.convert_tokens_to_ids(output_tokenized) + [-100 for _ in range(max_length-len(output_tokenized))]
 
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
@@ -120,7 +118,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         if len(input_encoded) > max_length:
             return self.__getitem__(random.randint(0, idx))
 
-        return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "decoder_data": torch.LongTensor(decoder_input_encoded), "input_mask": torch.LongTensor(input_mask), "decoder_mask": torch.LongTensor(decoder_mask)}
+        return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "input_mask": torch.LongTensor(input_mask), "decoder_mask": torch.LongTensor(decoder_mask)}
 
     def __len__(self):
         return len(self.data)-1
@@ -130,6 +128,7 @@ model = BartForConditionalGeneration.from_pretrained(config.base_model)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 model.to(device)
+breakpoint()
 
 model.train()
 run.watch(model)
@@ -192,10 +191,9 @@ while steps < config.max_steps:
             validation_index = random.randint(0, len(validate_dataset))
             validation_sample = validate_dataset[validation_index]
             val_d_in = torch.unsqueeze(validation_sample['input_data'], 0).to(device)
-            val_d_decin = torch.unsqueeze(validation_sample['decoder_data'], 0).to(device)
             val_d_attn  = torch.unsqueeze(validation_sample['input_mask'], 0).to(device)
             val_d_output  = torch.unsqueeze(validation_sample['output_data'], 0).to(device)
-            result = model(val_d_in, attention_mask=val_d_attn, decoder_input_ids=val_d_decin, labels=val_d_output)
+            result = model(val_d_in, attention_mask=val_d_attn, labels=val_d_output)
 
             val_loss = result["loss"]
 
@@ -209,7 +207,7 @@ while steps < config.max_steps:
             except ValueError:
                 answer = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
 
-            desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(validation_sample['decoder_data'])
+            desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(validation_sample['output_data'])
 
             t = targetSec.size(0)
 
@@ -250,11 +248,10 @@ while steps < config.max_steps:
         optim.zero_grad()
 
         input_data = chicken['input_data'].to(device)
-        decoder_data = chicken['decoder_data'].to(device)
         output_data = chicken['output_data'].to(device)
         attention_mask = chicken['input_mask'].to(device)
 
-        result = model(input_data, attention_mask=attention_mask, decoder_input_ids=decoder_data, labels=output_data)
+        result = model(input_data, attention_mask=attention_mask, labels=output_data)
         logits = result["logits"]
         loss = result["loss"]
 
@@ -285,7 +282,7 @@ while steps < config.max_steps:
             answer_token_clear = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
             answer = tokenizer.convert_tokens_to_string(answer_token_clear)
 
-        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(decoder_data[0])
+        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(targetSec)
         desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
 
         inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
