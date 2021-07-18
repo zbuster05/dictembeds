@@ -219,14 +219,15 @@ while steps < config.max_steps:
             acc = c/t
             bleu = sentence_bleu(answer_tokens_clear, desiredAnswer_tokens, smoothing_function=smoothie)
 
-            if (len(rolling_val_acc) >= 20):
-                rolling_val_acc.pop(0)
+            if "<CND>" not in desiredAnswer:
+                if (len(rolling_val_acc) >= 20):
+                    rolling_val_acc.pop(0)
 
-            if (len(rolling_val_loss) >= 20):
-                rolling_val_loss.pop(0)
+                if (len(rolling_val_loss) >= 20):
+                    rolling_val_loss.pop(0)
 
-            if (len(rolling_val_bleu) >= 20):
-                rolling_val_bleu.pop(0)
+                if (len(rolling_val_bleu) >= 20):
+                    rolling_val_bleu.pop(0)
 
             rolling_val_acc.append(acc)
             rolling_val_loss.append(val_loss.item())
