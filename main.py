@@ -21,8 +21,6 @@ import os
 
 sys.setrecursionlimit(200000) 
 
-print("DO YOU HAVE AT LEAST 80GB OF SWAP + MEMORY COMBINED???? IF NOT, KILL IT QUICKLY!!!! OR YOU SHALL DIE A DEATH!")
-
 hyperparametre_defaults = dict(
         learning_rate = 8e-5,
         num_warmup_steps = 4500,
@@ -36,8 +34,8 @@ hyperparametre_defaults = dict(
         max_steps = 50000
     )
 
-# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
@@ -103,22 +101,20 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
         output_tokenized = tokenizer.encode(output_string)
 
-        if len(output_tokenized) > max_length or len(decoder_input_tokenized) > max_length:
+        if len(output_tokenized) > max_length:
             return self.__getitem__(random.randint(0, idx))
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(input_tokenized))]
-        decoder_input_padded = decoder_input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(decoder_input_tokenized))]
 
         input_encoded = tokenizer.convert_tokens_to_ids(input_padded)
-        output_encoded = tokenizer.convert_tokens_to_ids(output_tokenized) + [-100 for _ in range(max_length-len(output_tokenized))]
+        output_encoded = output_tokenized + [-100 for _ in range(max_length-len(output_tokenized))]
 
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
-        decoder_mask = [1 for _ in range(len(decoder_input_tokenized))] + [0 for _ in range(max_length-len(decoder_input_tokenized))]
 
         if len(input_encoded) > max_length:
             return self.__getitem__(random.randint(0, idx))
 
-        return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "input_mask": torch.LongTensor(input_mask), "decoder_mask": torch.LongTensor(decoder_mask)}
+        return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "input_mask": torch.LongTensor(input_mask)}
 
     def __len__(self):
         return len(self.data)-1
@@ -128,7 +124,6 @@ model = BartForConditionalGeneration.from_pretrained(config.base_model)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 model.to(device)
-breakpoint()
 
 model.train()
 run.watch(model)
@@ -180,7 +175,8 @@ while steps < config.max_steps:
 
     # writer = SummaryWriter(f'./training/{modelID}')
     for i, chicken in enumerate(databatched_loader):
-        if (i % 10000 == 0 and i != 0):
+        # if (i % 10000 == 0 and i != 0):
+        if (i % 5000 == 0 and i != 0):
             # artifact = wandb.Artifact(f'bart_{config.wiki}-kw_summary', type='model', description="BART model finetuned upon enwiki first sentences")
             tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:ROUTINE::{epochs}:{i}")
             model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:ROUTINE::{epochs}:{i}")
@@ -203,11 +199,14 @@ while steps < config.max_steps:
             answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
 
             try: 
-                answer = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
+                answer_tokens_clear = [a for a in answer_tokens[0:answer_tokens.index("</s>")+1] if a != tokenizer.pad_token]
             except ValueError:
-                answer = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
+                answer_tokens_clear = [a for a in answer_tokens[0:] if a != tokenizer.pad_token]
 
-            desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(validation_sample['output_data'])
+            answer = tokenizer.convert_tokens_to_string(answer_tokens_clear)
+
+            desiredAnswer_tokens = list(filter(lambda x:x, tokenizer.convert_ids_to_tokens(targetSec)))
+            desiredAnswer = tokenizer.convert_tokens_to_string(desiredAnswer_tokens)
 
             t = targetSec.size(0)
 
@@ -218,7 +217,7 @@ while steps < config.max_steps:
             # w = (oneAnswer != targetSec).sum().item()
 
             acc = c/t
-            bleu = sentence_bleu([[a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token]], answer, smoothing_function=smoothie)
+            bleu = sentence_bleu(answer_tokens_clear, desiredAnswer_tokens, smoothing_function=smoothie)
 
             if (len(rolling_val_acc) >= 20):
                 rolling_val_acc.pop(0)
@@ -276,19 +275,19 @@ while steps < config.max_steps:
         max_acc = max(max_acc, acc)
 
         try: 
-            answer_token_clear = [a for a in answer_tokens[1:answer_tokens.index("</s>")] if a != tokenizer.pad_token]
-            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
+            answer_tokens_clear = [a for a in answer_tokens[0:answer_tokens.index("</s>")+1] if a != tokenizer.pad_token]
         except ValueError:
-            answer_token_clear = [a for a in answer_tokens[1:] if a != tokenizer.pad_token]
-            answer = tokenizer.convert_tokens_to_string(answer_token_clear)
+            answer_tokens_clear = [a for a in answer_tokens[0:] if a != tokenizer.pad_token]
 
-        desiredAnswer_tokens = tokenizer.convert_ids_to_tokens(targetSec)
-        desiredAnswer = tokenizer.convert_tokens_to_string([a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token])
+        answer = tokenizer.convert_tokens_to_string(answer_tokens_clear)
 
-        inputWord_tokens = tokenizer.convert_ids_to_tokens(input_data[0])
-        inputWord = tokenizer.convert_tokens_to_string([a for a in inputWord_tokens if a != tokenizer.pad_token])
+        desiredAnswer_tokens = list(filter(lambda x:x, tokenizer.convert_ids_to_tokens(targetSec)))
+        desiredAnswer = tokenizer.convert_tokens_to_string(desiredAnswer_tokens)
 
-        bleu = sentence_bleu([answer_token_clear], [a for a in desiredAnswer_tokens[2:] if a != tokenizer.pad_token], smoothing_function=smoothie)
+        inputWord_tokens = [a for a in tokenizer.convert_ids_to_tokens(input_data[0]) if a != tokenizer.pad_token]
+        inputWord = tokenizer.convert_tokens_to_string(inputWord_tokens)
+
+        bleu = sentence_bleu(answer_tokens_clear, desiredAnswer_tokens, smoothing_function=smoothie)
         avg_bleu = (avg_bleu+bleu)/2
         max_bleu = max(max_bleu, bleu)
 
