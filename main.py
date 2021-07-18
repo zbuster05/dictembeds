@@ -34,8 +34,8 @@ hyperparametre_defaults = dict(
         max_steps = 50000
     )
 
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
