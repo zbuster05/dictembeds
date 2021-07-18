@@ -97,11 +97,10 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
             return self.__getitem__(random.randint(0, idx))
 
         title_tokenized = tokenizer.tokenize(title_string)
-        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.mask_token] + tokenizer.tokenize(input_string)[:max_length-3-len(title_tokenized)] + [tokenizer.eos_token]
-
+        input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.mask_token] + tokenizer.tokenize(input_string) + [tokenizer.eos_token]
         output_tokenized = tokenizer.encode(output_string)
 
-        if len(output_tokenized) > max_length:
+        if len(output_tokenized) > max_length or len(input_tokenized) > max_length:
             return self.__getitem__(random.randint(0, idx))
 
         input_padded = input_tokenized + [tokenizer.pad_token for _ in range(max_length-len(input_tokenized))]
