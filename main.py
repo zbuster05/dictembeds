@@ -24,7 +24,8 @@ sys.setrecursionlimit(200000)
 hyperparametre_defaults = dict(
         learning_rate = 8e-5,
         num_warmup_steps = 4500,
-        batch_size = 2,
+        batch_size = 1,
+        accumulate = 32,
         max_length = 550,
         base_model = 'facebook/bart-base',
         oc_mix = 0.2,
@@ -251,7 +252,6 @@ while steps < config.max_steps:
 
             run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
 
-        optim.zero_grad()
 
         input_data = chicken['input_data'].to(device)
         output_data = chicken['output_data'].to(device)
@@ -259,13 +259,17 @@ while steps < config.max_steps:
 
         result = model(input_data, attention_mask=attention_mask, labels=output_data)
         logits = result["logits"]
-        loss = result["loss"]
+        loss = result["loss"] / config.accumulate
 
-        databatched_loader.set_description(f'{modelID} loss: {loss}')
+        databatched_loader.set_description(f'{modelID} loss: {loss*config.accumulate}')
         databatched_loader.refresh()
     
         loss.backward()
-        optim.step()
+
+        if steps % config.accumulate:
+            optim.step()
+            optim.zero_grad()
+
         scheduler.step()
 
         oneAnswer = torch.argmax(logits[0], dim=1)
@@ -304,7 +308,7 @@ while steps < config.max_steps:
 
         if (i % 10 == 0):
             try: 
-                run.log({"loss": loss.item(),
+                run.log({"loss": loss.item()*config.accumulate,
                          "accuracy": acc,
                          "bleu": bleu,
                          "input": wandb.Html(inputWord[3:-4]),
