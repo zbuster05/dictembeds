@@ -22,7 +22,7 @@ import os
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        learning_rate = 8e-5,
+        learning_rate = 2e-5,
         num_warmup_steps = 4500,
         batch_size = 1,
         accumulate = 32,
@@ -32,7 +32,7 @@ hyperparametre_defaults = dict(
         val_mix = 0.1,
         noise_mix = 0.1,
         wiki = 'enwiki',
-        max_steps = 50000
+        max_steps = 150000
     )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
