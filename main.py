@@ -28,7 +28,7 @@ hyperparametre_defaults = dict(
         accumulate = 32,
         max_length = 550,
         base_model = 'facebook/bart-base',
-        oc_mix = 0.2,
+        oc_mix = 0.1,
         val_mix = 0.1,
         noise_mix = 0.1,
         wiki = 'enwiki',
@@ -120,6 +120,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         return len(self.data)-1
 
 bart_config = BartConfig.from_pretrained(config.base_model)
+bart_config.max_length = config.max_length
 # bart_config.output_past = True # https://github.com/huggingface/transformers/issues/3527
 # bart_config.task_specific_params["summarization"]["max_length"] = config.max_length
 # bart_config.task_specific_params["summarization_cnn"]["max_length"] = config.max_length
