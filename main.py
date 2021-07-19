@@ -24,9 +24,9 @@ sys.setrecursionlimit(200000)
 hyperparametre_defaults = dict(
         learning_rate = 2e-5,
         num_warmup_steps = 4500,
-        batch_size = 1,
-        accumulate = 32,
-        max_length = 550,
+        batch_size = 4,
+        accumulate = 1,
+        max_length = 256,
         base_model = 'facebook/bart-base',
         oc_mix = 0.1,
         val_mix = 0.1,
@@ -260,16 +260,15 @@ while steps < config.max_steps:
 
         result = model(input_data, attention_mask=attention_mask, labels=output_data)
         logits = result["logits"]
-        loss = result["loss"] / config.accumulate
+        loss = result["loss"]
 
-        databatched_loader.set_description(f'{modelID} loss: {loss*config.accumulate}')
+        databatched_loader.set_description(f'{modelID} loss: {loss}')
         databatched_loader.refresh()
     
         loss.backward()
 
-        if steps % config.accumulate:
-            optim.step()
-            optim.zero_grad()
+        optim.step()
+        optim.zero_grad()
 
         scheduler.step()
 
@@ -309,7 +308,7 @@ while steps < config.max_steps:
 
         if (i % 10 == 0):
             try: 
-                run.log({"loss": loss.item()*config.accumulate,
+                run.log({"loss": loss.item(),
                          "accuracy": acc,
                          "bleu": bleu,
                          "input": wandb.Html(inputWord[3:-4]),
