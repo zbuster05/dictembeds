@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dictembeds Demo</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body class="m-10 bg-gray-100">
+    <h1 class="font-bold">Dictembeds, a demo.</h1>
+
+    <br />
+    <div class="text-xs text-gray-700 mb-1.5">What is the term you wish to define?</div>
+    <input id="title" placeholder="Chickens" class="text-sm pl-2 pr-2"></input>
+    <br />
+    <br />
+    <div class="text-xs text-gray-700 mb-1.5">What is the context under which you want to define it?</div>
+    <textarea id="context" placeholder="The chicken (Gallus gallus domesticus), a subspecies of the red junglefowl, is a type of domesticated fowl, originally from Southeastern Asia. Rooster or cock is a term for an adult male bird, and younger male may be called a cockerel. A male that has been castrated is a capon. Originally raised for cockfighting or for special ceremonies, chickens were not kept for food until the Hellenistic period (4th–2nd centuries BCE). Humans now keep chickens primarily as a source of food (consuming both their meat and eggs) and as pets." class="text-sm p-2" cols="60" rows="10"></textarea>
+    <br />
+    <br />
+    <a id="button" class="p-1 text-sm rounded-md text-white bg-gray-600 hover:bg-gray-500 transition cursor-pointer">Define!</a>
+    <span id="fader" class="inline-block text-xs text-gray-600 ml-2 animate-pulse" style="display: none">Waiting for response...</span>
+    <hr class="mt-5 mb-5" />
+    <div class="text-xs text-gray-700 mb-1.5">The model's output:</div>
+    <textarea id="output" placeholder="" class="text-sm p-2" cols="60" rows="10" readonly></textarea>
+
+    <script>
+        $( "#button" ).on( "click", function() {
+            $("#fader").css("display", "inline-block");
+            $.ajax({
+                type: "POST",
+                url: "https://socks.jemoka.com/predict",
+                data: JSON.stringify({title: $("#title").value?$("#title").value:"", context: $("#context").value?$("#context").value:""}),
+                success: function(data) {
+                    $("#fader").css("display", "none");
+                    $("#output").val(data.response);
+                },
+                contentType: "application/json"
+            }).fail(function(response) {
+                $("#output").val(response.responseJSON.response);
+            });
+        });
+    </script>
+
+</body>
+</html>
+
