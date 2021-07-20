@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.config["DEBUG"] = False
 CORS(app)
 
-model_path = "./training/bart_enwiki-kw_summary-f84c4:ROUTINE::0:60000"
+model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
 
 class Engine:
     def __init__(self, model_path:str):
