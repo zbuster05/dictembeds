@@ -16,7 +16,7 @@ import os
 app = Flask(__name__)
 app.config["DEBUG"] = True
 
-model_path = "./model/bart_enwiki-kw_summary-f84c4:ROUTINE::0:60000"
+model_path = "./training/bart_enwiki-kw_summary-f84c4:ROUTINE::0:60000"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -24,7 +24,8 @@ class Engine:
         self.tokenizer = BartTokenizer.from_pretrained(path)
         self.model = BartForConditionalGeneration.from_pretrained(path)
 
-        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        # self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.device = torch.device('cpu')
 
         self.model.to(self.device)
         self.model.eval()
