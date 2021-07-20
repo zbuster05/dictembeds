@@ -20,6 +20,7 @@ app.config["DEBUG"] = False
 CORS(app)
 
 model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
+# model_path = "./training/bart_enwiki-kw_summary-f84c4:ROUTINE::0:60000"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -49,11 +50,13 @@ class Engine:
             processed_samples,
             decoder_start_token_id=self.tokenizer.eos_token_id,
             no_repeat_ngram_size=5, # block 3-grams from appearing abs/1705.04304
-            # num_beams=5,
+            num_beams=5,
             max_length=1000,
-            do_sample=True,
-            top_p = 0.90,
-            top_k = 20
+#             do_sample=True,
+            # top_p = 0.90,
+            # top_k = 20,
+            length_penalty = 0.5,
+            repetition_penalty = 1.2
         )
         return [self.tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
 
