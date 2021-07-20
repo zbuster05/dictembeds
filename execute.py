@@ -4,6 +4,8 @@
 from transformers import BartTokenizer, BartForConditionalGeneration, AdamW, get_cosine_schedule_with_warmup
 import torch
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+
 
 import numpy as np
 
@@ -14,7 +16,8 @@ import json
 import os
 
 app = Flask(__name__)
-app.config["DEBUG"] = True
+app.config["DEBUG"] = False
+CORS(app)
 
 model_path = "./training/bart_enwiki-kw_summary-f84c4:ROUTINE::0:60000"
 
@@ -89,7 +92,7 @@ def predict():
     try:
         title = request.json["title"]
         context = request.json["context"]
-    except KeyError:
+    except (KeyError, TypeError):
         return jsonify({"code": "bad_request", "response": "Bad request. Missing key(s) title, context.", "payload": ""}), 400
 
     try: 
