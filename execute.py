@@ -55,7 +55,7 @@ class Engine:
 #             do_sample=True,
             # top_p = 0.90,
             # top_k = 20,
-            length_penalty = 0.5,
+            length_penalty = 0.8,
             repetition_penalty = 1.2
         )
         return [self.tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
