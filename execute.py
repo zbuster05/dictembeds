@@ -12,7 +12,7 @@ import uuid
 import json
 import os
 
-model_path = "./training/bart_enwiki-kw_summary-9eeac:B_VAL::0:53400:1.7196245543694073"
+model_path = "./model/bart_enwiki-kw_summary-f84c4:ROUTINE::0:60000"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -93,4 +93,6 @@ while True:
     word = input("define: ")
 
     print(e.execute(word.strip(), """The dominant sequence transduction models are based on complex recurrent or convolutional neural networks in an encoder-decoder configuration. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data."""))
+    # print(e.execute(word.strip(), """The Columbian Exchange transformed both sides of the Atlantic, but with dramatically disparate outcomes. New diseases wiped out entire civilizations in the Americas, while newly imported nutrient-rich foodstuffs enabled a European population boom. Spain benefited most immediately as the wealth of the Aztec and Incan Empires strengthened the Spanish monarchy. Spain used its new riches to gain an advantage over other European nations, but this advantage was soon contested. Portugal, France, the Netherlands, and England all raced to the New World, eager to match the gains of the Spanish. Native peoples greeted the new visitors with responses ranging from welcoming cooperation to aggressive violence, but the ravages of disease and the possibility of new trading relationships enabled Europeans to create settlements all along the western rim of the Atlantic world. New empires would emerge from these tenuous beginnings, and by the end of the seventeenth century, Spain would lose its privileged position to its rivals. An age of colonization had begun and, with it, a great collision of cultures commenced."""))
+
 
