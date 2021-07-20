@@ -31,7 +31,7 @@
             $.ajax({
                 type: "POST",
                 url: "https://socks.jemoka.com/predict",
-                data: JSON.stringify({title: $("#title").val()?$("#context").val():"", context: $("#context").val()?$("#context").val():""}),
+                data: JSON.stringify({title: $("#title").val()?$("#title").val():"", context: $("#context").val()?$("#context").val():""}),
                 success: function(data) {
                     $("#fader").css("display", "none");
                     $("#output").val(data.response);
