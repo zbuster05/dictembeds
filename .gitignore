@@ -287,3 +287,11 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+enwiki*
+training
+model
+data
+results
+linuxenv
+macenv
+source
