@@ -12,7 +12,7 @@ import uuid
 import json
 import os
 
-model_path = "./training/bart_enwiki-kw_summary-9a9b0:ROUTINE::0:5000"
+model_path = "./training/bart_enwiki-kw_summary-9eeac:B_VAL::0:53400:1.7196245543694073"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -41,8 +41,9 @@ class Engine:
         summary_ids = self.model.generate(
             processed_samples,
             decoder_start_token_id=self.tokenizer.eos_token_id,
-            no_repeat_ngram_size=3, # block 3-grams from appearing abs/1705.04304
+            # no_repeat_ngram_size=3, # block 3-grams from appearing abs/1705.04304
             num_beams=3,
+            max_length=1000,
             # do_sample=True,
             # top_p = 0.90,
             # top_k = 20

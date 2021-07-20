@@ -25,7 +25,7 @@ import os
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        learning_rate = 8e-5,
+        learning_rate = 2e-5,
         num_warmup_steps = 4500,
         batch_size = 12,
         max_length = 250,
@@ -34,7 +34,7 @@ hyperparametre_defaults = dict(
         val_mix = 0.1,
         noise_mix = 0.1,
         wiki = 'enwiki',
-        max_steps = 50000
+        max_steps = 150000
     )
 
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
@@ -92,12 +92,12 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
         try: 
             if output_string[-1] not in ['.', '?', '>', '!', '"']:
-                return self.__getitem__(random.randint(0, idx))
+                return self.__getitem__(random.randint(0, len(self)-1))
         except IndexError:
-            return self.__getitem__(random.randint(0, idx))
+            return self.__getitem__(random.randint(0, len(self)-1))
  
         if len(self.data[idx]["target"]) < 45:
-            return self.__getitem__(random.randint(0, idx))
+            return self.__getitem__(random.randint(0, len(self)-1))
 
         title_tokenized = tokenizer.tokenize(title_string)
         input_tokenized = [tokenizer.bos_token] + title_tokenized + [tokenizer.mask_token] + tokenizer.tokenize(input_string) + [tokenizer.eos_token]
@@ -114,7 +114,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_mask = [1 for _ in range(len(input_tokenized))] + [0 for _ in range(max_length-len(input_tokenized))]
 
         if len(input_encoded) > max_length:
-            return self.__getitem__(random.randint(0, idx))
+            return self.__getitem__(random.randint(0, len(self)-1))
 
         return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "input_mask": torch.LongTensor(input_mask)}
 
@@ -122,6 +122,7 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         return len(self.data)-1
 
 bart_config = BartConfig.from_pretrained(config.base_model)
+bart_config.max_length = config.max_length
 # bart_config.output_past = True # https://github.com/huggingface/transformers/issues/3527
 # bart_config.task_specific_params["summarization"]["max_length"] = config.max_length
 # bart_config.task_specific_params["summarization_cnn"]["max_length"] = config.max_length
@@ -254,7 +255,6 @@ while steps < config.max_steps:
 
             run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
 
-        optim.zero_grad()
 
         input_data = chicken['input_data'].to(device)
         output_data = chicken['output_data'].to(device)
@@ -268,7 +268,10 @@ while steps < config.max_steps:
         databatched_loader.refresh()
     
         loss.backward()
+
         optim.step()
+        optim.zero_grad()
+
         scheduler.step()
 
         oneAnswer = torch.argmax(logits[0], dim=1)
