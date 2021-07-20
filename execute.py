@@ -27,8 +27,7 @@ class Engine:
         self.tokenizer = BartTokenizer.from_pretrained(path)
         self.model = BartForConditionalGeneration.from_pretrained(path)
 
-        # self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.device = torch.device('cpu')
+        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
         self.model.to(self.device)
         self.model.eval()
