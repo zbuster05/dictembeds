@@ -20,7 +20,7 @@ app.config["DEBUG"] = False
 CORS(app)
 
 # model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
-model_path = "./training/bart_enwiki-kw_summary-f84c4:ROUTINE::0:60000"
+model_path = "./training/bart_enwiki-kw_summary-f431f:ROUTINE::0:90000"
 
 class Engine:
     def __init__(self, model_path:str):
@@ -44,14 +44,15 @@ class Engine:
     def final_decoder_hidden_mean(self, processed_samples:[torch.Tensor]):
         return np.mean((self.model(processed_samples, return_dict=True, output_hidden_states=True))["decoder_hidden_states"][-1].to("cpu").detach().numpy(), axis=0)
 
-    def generate_syntheses(self, processed_samples:[torch.Tensor]): 
+    def generate_syntheses(self, processed_samples:[torch.Tensor], num_beams:int=5, min_length:int=10, no_repeat_ngram_size:int=3): 
         # https://huggingface.co/blog/how-to-generate
         summary_ids = self.model.generate(
             processed_samples,
             decoder_start_token_id=self.tokenizer.eos_token_id,
-            no_repeat_ngram_size=5, # block 3-grams from appearing abs/1705.04304
-            num_beams=5,
+            no_repeat_ngram_size=no_repeat_ngram_size, # block 3-grams from appearing abs/1705.04304
+            num_beams=num_beams,
             max_length=1000,
+            min_length=min_length,
 #             do_sample=True,
             # top_p = 0.90,
             # top_k = 20,
@@ -80,12 +81,12 @@ class Engine:
 
         return torch.LongTensor(results).to(self.device)
 
-    def batch_execute(self, samples:[[str,str]]):
-        res = self.generate_syntheses(self.batch_process_samples(samples))
+    def batch_execute(self, samples:[[str,str]], num_beams:int=5, min_length:int=10, no_repeat_ngram_size:int=3):
+        res = self.generate_syntheses(self.batch_process_samples(samples), num_beams, min_length, no_repeat_ngram_size)
         return res 
 
-    def execute(self, article_title:str="", context:str=""):
-        return self.batch_execute([[article_title, context]])[0]
+    def execute(self, article_title:str="", context:str="", num_beams:int=5, min_length:int=10, no_repeat_ngram_size:int=3):
+        return self.batch_execute([[article_title, context]], num_beams, min_length, no_repeat_ngram_size)[0]
 
 e = Engine(model_path=model_path)
 
@@ -97,10 +98,21 @@ def predict():
     except (KeyError, TypeError):
         return jsonify({"code": "bad_request", "response": "Bad request. Missing key(s) title, context.", "payload": ""}), 400
 
+    params = request.json.get("params")
+
     try: 
-        result = e.execute(title.strip(), context.strip())
+        if params:
+            result = e.execute(title.strip(), 
+                                context.strip(), 
+                                num_beams=int(params["num_beams"]), 
+                                min_length=int(params["min_length"]), 
+                                no_repeat_ngram_size=int(params["no_repeat_ngram_size"]))
+        else:
+            result = e.execute(title.strip(), context.strip())
     except ValueError:
         return jsonify({"code": "size_overflow", "response": f"Size overflow. The context string is too long and should be less than {e.tokenizer.model_max_length} tokens.", "payload": e.tokenizer.model_max_length}), 418
+    except (KeyError, TypeError):
+        return jsonify({"code": "bad_request", "response": "Bad request. Missing few of key(s) num_beams,  min_length or no_repeat_ngram_size in params.", "payload": ""}), 400
 
     return {"code": "success", "response": result}, 200
 
