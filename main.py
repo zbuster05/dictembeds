@@ -25,20 +25,20 @@ import os
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        learning_rate = 2e-5,
-        num_warmup_steps = 4500,
-        batch_size = 12,
-        max_length = 250,
-        base_model = 'facebook/bart-base',
-        oc_mix = 0.1,
+        learning_rate = 3e-6,
+        num_warmup_steps = 6000,
+        batch_size = 2,
+        max_length = 215,
+        base_model = 'facebook/bart-large',
+        oc_mix = 0.1103,
         val_mix = 0.1,
         noise_mix = 0.1,
         wiki = 'enwiki',
         max_steps = 150000
     )
 
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-#run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+#run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
