@@ -20,7 +20,8 @@ app.config["DEBUG"] = False
 CORS(app)
 
 # model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
-model_path = "./training/bart_enwiki-kw_summary-f431f:ROUTINE::0:90000"
+# model_path = "./training/bart_enwiki-kw_summary-a2fc9:B_VAL::0:24900:0.8616854640095484"
+model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
 
 class Engine:
     def __init__(self, model_path:str):
