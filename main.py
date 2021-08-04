@@ -239,9 +239,9 @@ while steps < config.max_steps:
                 if (len(rolling_val_bleu) >= 20):
                     rolling_val_bleu.pop(0)
 
-            rolling_val_acc.append(acc)
-            rolling_val_loss.append(val_loss.item())
-            rolling_val_bleu.append(bleu)
+                rolling_val_acc.append(acc)
+                rolling_val_loss.append(val_loss.item())
+                rolling_val_bleu.append(bleu)
 
              # if we have a new min                                  # if we haden't just started
             if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
