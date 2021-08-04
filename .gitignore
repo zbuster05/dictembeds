@@ -295,3 +295,4 @@ results
 linuxenv
 macenv
 source
+.venv/

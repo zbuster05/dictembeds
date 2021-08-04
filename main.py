@@ -25,6 +25,7 @@ import os
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
+        accumulate = 8,
         learning_rate = 3e-6,
         num_warmup_steps = 6000,
         batch_size = 2,
@@ -262,17 +263,19 @@ while steps < config.max_steps:
 
         result = model(input_data, attention_mask=attention_mask, labels=output_data)
         logits = result["logits"]
-        loss = result["loss"]
+        loss = result["loss"]/config.accumulate
 
         databatched_loader.set_description(f'{modelID} loss: {loss}')
         databatched_loader.refresh()
     
         loss.backward()
 
-        optim.step()
-        optim.zero_grad()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
 
-        scheduler.step()
+        if i % config.accumulate == 0:
+            optim.step()
+            optim.zero_grad()
+            scheduler.step()
 
         oneAnswer = torch.argmax(logits[0], dim=1)
         answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
