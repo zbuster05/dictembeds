@@ -245,17 +245,17 @@ while steps < config.max_steps:
                 rolling_val_loss.append(val_loss.item())
                 rolling_val_bleu.append(bleu)
 
-             # if we have a new min                                  # if we haden't just started
-            if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
-                min_val_20rolling = statistics.mean(rolling_val_loss)
+                 # if we have a new min                                  # if we haden't just started
+                if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
+                    min_val_20rolling = statistics.mean(rolling_val_loss)
 
-                # saving "best" weights
-                tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
-                model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
+                    # saving "best" weights
+                    tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
+                    model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
 
-                
+                    
 
-            run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
+                run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
 
 
         input_data = chicken['input_data'].to(device)
