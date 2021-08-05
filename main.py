@@ -35,7 +35,8 @@ hyperparametre_defaults = dict(
         val_mix = 0.1,
         noise_mix = 0.1,
         wiki = 'enwiki',
-        max_steps = 150000
+        max_steps = 150000,
+        clipping = 0.5
     )
 
 #run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
@@ -240,21 +241,21 @@ while steps < config.max_steps:
                 if (len(rolling_val_bleu) >= 20):
                     rolling_val_bleu.pop(0)
 
-            rolling_val_acc.append(acc)
-            rolling_val_loss.append(val_loss.item())
-            rolling_val_bleu.append(bleu)
+                rolling_val_acc.append(acc)
+                rolling_val_loss.append(val_loss.item())
+                rolling_val_bleu.append(bleu)
 
-             # if we have a new min                                  # if we haden't just started
-            if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
-                min_val_20rolling = statistics.mean(rolling_val_loss)
+                 # if we have a new min                                  # if we haden't just started
+                if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
+                    min_val_20rolling = statistics.mean(rolling_val_loss)
 
-                # saving "best" weights
-                tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
-                model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
+                    # saving "best" weights
+                    tokenizer.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
+                    model.save_pretrained(f"./training/bart_{config.wiki}-kw_summary-{modelID}:B_VAL::{epochs}:{i}:{min_val_20rolling}")
 
-                
+                    
 
-            run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
+                run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
 
 
         input_data = chicken['input_data'].to(device)
@@ -270,7 +271,7 @@ while steps < config.max_steps:
     
         loss.backward()
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), config.clipping)
 
         if i % config.accumulate == 0:
             optim.step()
