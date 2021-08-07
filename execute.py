@@ -13,6 +13,7 @@ import pathlib
 import random
 import uuid
 import json
+import re
 import os
 
 app = Flask(__name__)
@@ -106,12 +107,12 @@ def predict():
     try: 
         if params:
             result = e.execute(title.strip(), 
-                                context.strip(), 
+                                re.sub(r"\n", "", context.strip()), 
                                 num_beams=int(params["num_beams"]), 
                                 min_length=int(params["min_length"]), 
                                 no_repeat_ngram_size=int(params["no_repeat_ngram_size"]))
         else:
-            result = e.execute(title.strip(), context.strip())
+            result = e.execute(title.strip(), re.sub(r"\n", "", context.strip()))
     except ValueError:
         return jsonify({"code": "size_overflow", "response": f"Size overflow. The context string is too long and should be less than {e.tokenizer.model_max_length} tokens.", "payload": e.tokenizer.model_max_length}), 418
     except (KeyError, TypeError):

@@ -16,40 +16,50 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"),
     text = cleaner.clean_text(text)
     cleaned_text, links = cleaner.build_links(text)
     
+    abstract = []
     passage = []
-    for i in cleaned_text.split("\n"):
+
+    abstracting = True
+    clean_text = re.sub(r"__NOTOC__", "", cleaned_text)
+
+    for i in clean_text.split("\n"):
         try: 
             if (i[0] == "="):
-                break;
-            passage.append(i)
+                abstracting = False
+            else:
+                if abstracting:
+                    abstract.append(i)
+                else:
+                    passage.append(i+"\n")
         except IndexError:
-            break;
+            continue;
 
-    if (len(passage) < 4):
+    if (len(abstract) < 4) or (len(passage) < 20):
         continue
 
-    result = ""
-    for i in passage:
-        result = result+i+" "
-    result = result.strip()
+    abstract_text = " ".join(abstract)
+    passage_text = " ".join(passage)
 
     linkdb = []
     for i in links:
         linkdb.append(i["link"])
 
-    splits = sent_tokenize(result)
-    front_raw = splits.pop(0)
+    abstract_splits = sent_tokenize(abstract_text)
+    front_raw = abstract_splits.pop(0)
+
+    passage_splits = sent_tokenize(passage_text)
+    back_raw = passage_splits.pop()
+
+    if len(abstract_splits) < 5 or len(passage_splits) < 50:
+        continue
 
     # things in the parens often suck.
     front = re.sub("  ", " ", re.sub(r"\(.*?\)", "", front_raw)) 
 
-    if (len(splits) < 5):
-        continue
+    abstract_text = abstract_text.replace(front_raw, "").strip()
+    passage_text = passage_text.replace(back_raw, "").strip()
 
-    result =  result.replace(front_raw, "")
-    result = result.strip()
-
-    database.append({"title": title, "context": result, "target": front, "links": linkdb, "oncontext": True})
+    database.append({"title": title, "context": abstract_text, "full_context": passage_text, "target": front, "links": linkdb, "oncontext": True})
     index[title] = front
 
 ldatabase = []
@@ -74,19 +84,19 @@ for item in tqdm(database, total=len(database)):
     try: 
         for link in item["links"]:
             try: 
-                ldatabase.append({"title": link, "context": item["context"], "target": index[link], "oncontext": False})
+                ldatabase.append({"title": link, "context": item["context"], "full_context": item["full_context"], "target": index[link], "oncontext": False})
             except KeyError:
                 continue
     except KeyError:
         continue
 
     if len(ldatabase) > 53760:
-        with open(f"./data/{prefix}-parsed-oc-OC{i}.json", "w") as df:
+        with open(f"./data/{prefix}-parsed-long-oc-OC{i}.json", "w") as df:
             df.write(json.dumps(ldatabase))
             ldatabase = []
             i += 1
 
-with open(f"./data/{prefix}-parsed-oc-OC{i}.json", "w") as df:
+with open(f"./data/{prefix}-parsed-long-oc-OC{i}.json", "w") as df:
     df.write(json.dumps(ldatabase))
     ldatabase = []
     i += 1
