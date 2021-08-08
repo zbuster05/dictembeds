@@ -68,12 +68,12 @@ for item in tqdm(database, total=len(database)):
     ldatabase.append(item)
 
     if len(ldatabase) > 53760:
-        with open(f"./data/{prefix}-parsed-oc-MD{i}.json", "w") as df:
+        with open(f"./data/{prefix}-parsed-long-oc-MD{i}.json", "w") as df:
             df.write(json.dumps(ldatabase))
             ldatabase = []
             i += 1
 
-with open(f"./data/{prefix}-parsed-oc-MD{i}.json", "w") as df:
+with open(f"./data/{prefix}-parsed-long-oc-MD{i}.json", "w") as df:
     df.write(json.dumps(database))
     ldatabase = []
     i += 1
