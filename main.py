@@ -24,14 +24,16 @@ import wandb
 import json
 import os
 
+print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW! OR YOU WILL OOM YOUR COMPUTER AND YOU WILLL BE SAD AND BE CONDEMNED TO YEARS OF WRITING CSS")
+
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        learning_rate = 3e-6,
+        learning_rate = 1e-5,
         num_warmup_steps = 6000,
         batch_size = 1,
         max_length = 512,
-        base_model = 'facebook/bart-large',
+        base_model = 'facebook/bart-base',
         oc_mix = 0.1103,
         val_mix = 0.1,
         noise_mix = 0.1,
@@ -41,16 +43,17 @@ hyperparametre_defaults = dict(
         clipping = 0.5
     )
 
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
 
 print("Caching originals data...")
-filename = f"./data/{config.wiki}-parsed-long-oc-MD0.json"
-with open(filename, "r") as df:
-    training_data_originals = training_data_originals + json.load(df)
+for i in tqdm.tqdm(range(0,2)):
+    filename = f"./data/{config.wiki}-parsed-long-oc-MD{i}.json"
+    with open(filename, "r") as df:
+        training_data_originals = training_data_originals + json.load(df)
 
 validation_count = int(len(training_data_originals)*config.val_mix)
 validation_data_originals = training_data_originals[:validation_count]
@@ -58,7 +61,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,1)):
+for i in tqdm.tqdm(range(0,2)):
     filename = f"./data/{config.wiki}-parsed-long-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
@@ -126,9 +129,6 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
 
         if len(input_encoded) > max_length:
             return self.__getitem__(random.randint(0, len(self)-1))
-
-        if is_mix and not is_noise:
-            breakpoint()
 
         return {"input_data": torch.LongTensor(input_encoded), "output_data": torch.LongTensor(output_encoded), "input_mask": torch.LongTensor(input_mask)}
 
