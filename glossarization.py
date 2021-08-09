@@ -88,10 +88,10 @@ glossary = {}
 print("running predictions...")
 for word, context in tqdm.tqdm(contexts.items()):
     result = e.execute(word.strip(), context, 
-                       num_beams=5, min_length=MIN_LENGTH, 
-                       no_repeat_ngram_size=3)
+                       num_beams=2, min_length=MIN_LENGTH, 
+                       no_repeat_ngram_size=4)
 
-    if result != "<CND":
+    if result != "<CND>":
         glossary[word] = result
 
 breakpoint()
