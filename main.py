@@ -29,7 +29,7 @@ print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW!
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        learning_rate = 1e-6,
+        learning_rate = 3e-5,
         num_warmup_steps = 6000,
         batch_size = 1,
         max_length = 215,
