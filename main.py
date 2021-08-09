@@ -40,7 +40,6 @@ hyperparametre_defaults = dict(
         context_mix = 0.5,
         wiki = 'enwiki',
         max_steps = 150000,
-        clipping = 0.5
     )
 
 # run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
@@ -282,8 +281,6 @@ while steps < config.max_steps:
         databatched_loader.refresh()
     
         loss.backward()
-
-        torch.nn.utils.clip_grad_norm_(model.parameters(), config.clipping)
 
         optim.step()
         optim.zero_grad()
