@@ -20,8 +20,8 @@ TFIDF_FINAL_INCLUDE = 50 # "important" words to include
 with open("./textbook.txt", "r") as data:
     data_text = data.read()
 
-documents = [i.strip() for i in list(filter(lambda x:(x!='' and len(x)>1000), re.sub("_", "", re.sub("\n", " ", data_text)).split("====")))]
-tokenized_documents = [re.findall("[A-Z]{2,}(?![a-z])|[A-Z][a-z]+(?=[A-Z])|[\'\w\-]+",i) for i in documents]
+documents = [i.strip() for i in list(filter(lambda x:(x!='' and len(x)>1000), re.sub("_", "", re.sub("\n", " ", data_text.lower())).split("====")))]
+tokenized_documents = [word_tokenize(i) for i in documents]
 
 df = defaultdict(int)
 tfs = []
