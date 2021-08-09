@@ -34,7 +34,7 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"),
         except IndexError:
             continue;
 
-    if (len(abstract) < 4) or (len(passage) < 20):
+    if (len(abstract) < 2) or (len(passage) < 10):
         continue
 
     abstract_text = " ".join(abstract)
@@ -45,13 +45,14 @@ for title, text in tqdm(iterate(f"./source/{prefix}-latest-pages-articles.xml"),
         linkdb.append(i["link"])
 
     abstract_splits = sent_tokenize(abstract_text)
-    front_raw = abstract_splits.pop(0)
-
     passage_splits = sent_tokenize(passage_text)
+
+    if len(abstract_splits) < 2 or len(passage_splits) < 20:
+        continue
+
+    front_raw = abstract_splits.pop(0)
     back_raw = passage_splits.pop()
 
-    if len(abstract_splits) < 5 or len(passage_splits) < 50:
-        continue
 
     # things in the parens often suck.
     front = re.sub("  ", " ", re.sub(r"\(.*?\)", "", front_raw)) 
