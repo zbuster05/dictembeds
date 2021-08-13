@@ -33,7 +33,7 @@ hyperparametre_defaults = dict(
         num_warmup_steps = 6000,
         batch_size = 2,
         max_length = 215,
-        base_model = 'facebook/bart-base',
+        base_model = 'facebook/bart-large',
         oc_mix = 0.1103,
         val_mix = 0.1,
         noise_mix = 0.1,
@@ -49,7 +49,7 @@ config = wandb.config
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,2)):
+for i in tqdm.tqdm(range(0,5)):
     filename = f"./data/{config.wiki}-parsed-long-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
@@ -60,7 +60,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,2)):
+for i in tqdm.tqdm(range(0,5)):
     filename = f"./data/{config.wiki}-parsed-long-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
