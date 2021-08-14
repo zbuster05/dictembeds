@@ -5,6 +5,8 @@ from transformers import BartConfig, BartTokenizer, BartForConditionalGeneration
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
 
+from nltk.tokenize import sent_tokenize
+
 import statistics
 
 from torch.utils.data import DataLoader
@@ -22,10 +24,11 @@ import wandb
 import json
 import os
 
+print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW! OR YOU WILL OOM YOUR COMPUTER AND YOU WILLL BE SAD AND BE CONDEMNED TO YEARS OF W̶R̶I̶T̶I̶N̶G̶ ̶C̶S̶S̶ SADNESS")
+
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        accumulate = 8,
         learning_rate = 3e-6,
         num_warmup_steps = 6000,
         batch_size = 2,
@@ -34,20 +37,20 @@ hyperparametre_defaults = dict(
         oc_mix = 0.1103,
         val_mix = 0.1,
         noise_mix = 0.1,
+        context_mix = 0.5,
         wiki = 'enwiki',
         max_steps = 150000,
-        clipping = 0.5
     )
 
-#run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
 run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,8)):
-    filename = f"./data/{config.wiki}-parsed-oc-MD{i}.json"
+for i in tqdm.tqdm(range(0,5)):
+    filename = f"./data/{config.wiki}-parsed-long-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
 
@@ -57,8 +60,8 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,8)):
-    filename = f"./data/{config.wiki}-parsed-oc-OC{i}.json"
+for i in tqdm.tqdm(range(0,5)):
+    filename = f"./data/{config.wiki}-parsed-long-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
 
@@ -91,6 +94,14 @@ class EnWikiKeywordSentsDataset(torch.utils.data.Dataset):
         input_string = self.data[noise_index if is_noise else idx]["context"] 
         title_string = self.data[idx]["title"].lower()
         output_string = "<CND>" if is_noise else re.sub("(&.*?;)", "", re.sub("[{|}]", "", self.data[idx]["target"]))
+
+        is_mix = random.uniform(0,1)<config.context_mix
+        if is_mix and not is_noise:
+            input_splits = sent_tokenize(input_string)
+            noise_splits = sent_tokenize(self.data[noise_index]["context"])
+            appends = input_splits+noise_splits
+            random.shuffle(appends)
+            input_string = "".join([i+" " for i in appends]).strip()
 
         try: 
             if output_string[-1] not in ['.', '?', '>', '!', '"']:
@@ -264,19 +275,16 @@ while steps < config.max_steps:
 
         result = model(input_data, attention_mask=attention_mask, labels=output_data)
         logits = result["logits"]
-        loss = result["loss"]/config.accumulate
+        loss = result["loss"]
 
         databatched_loader.set_description(f'{modelID} loss: {loss}')
         databatched_loader.refresh()
     
         loss.backward()
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), config.clipping)
-
-        if i % config.accumulate == 0:
-            optim.step()
-            optim.zero_grad()
-            scheduler.step()
+        optim.step()
+        optim.zero_grad()
+        scheduler.step()
 
         oneAnswer = torch.argmax(logits[0], dim=1)
         answer_tokens = tokenizer.convert_ids_to_tokens(oneAnswer)
