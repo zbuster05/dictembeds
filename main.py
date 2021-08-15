@@ -39,7 +39,7 @@ hyperparametre_defaults = dict(
         noise_mix = 0.1,
         context_mix = 0.5,
         wiki = 'enwiki',
-        max_steps = 150000,
+        max_steps = 50000,
     )
 
 # run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")

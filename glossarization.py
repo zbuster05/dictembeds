@@ -25,7 +25,7 @@ MIN_LENGTH = 0 # minimum length of summaries
 
 print("loading corpus...")
 
-with open("./relativity.txt", "r") as data:
+with open("./amercianrev.txt", "r") as data:
     data_text = data.read()
 
 print("tokenizing corpus...")
@@ -33,33 +33,42 @@ documents = [i.strip() for i in list(filter(lambda x:(x!='' and len(x)>1000), re
 tokenized_documents = [word_tokenize(i) for i in documents]
 sentences = [i for j in [sent_tokenize(i) for i in documents] for i in j]
 
-print("calculating TFIDF...")
-df = defaultdict(int)
-tfs = []
-for doc in tokenized_documents:
-    d = defaultdict(int)
-    for word in doc:
-        if word not in d:
-            df[word] += 1
-        d[word] += 1
-    tfs.append({i:math.log(1+j/len(doc), 2) for i,j in d.items()})
-idf = {i:math.log(len(documents)/j, 2) for i,j in df.items()}
+identify = input("Auto-identify? (y/N) ")
+if identify.lower() == 'y':
+    print("calculating TFIDF...")
+    df = defaultdict(int)
+    tfs = []
+    for doc in tokenized_documents:
+        d = defaultdict(int)
+        for word in doc:
+            if word not in d:
+                df[word] += 1
+            d[word] += 1
+        tfs.append({i:math.log(1+j/len(doc), 2) for i,j in d.items()})
+    idf = {i:math.log(len(documents)/j, 2) for i,j in df.items()}
 
-tfidf_count = defaultdict(int)
-tfidf_sum = defaultdict(int)
+    tfidf_count = defaultdict(int)
+    tfidf_sum = defaultdict(int)
 
-for i in tfs:
-    res = sorted({k:j*idf[k] for k,j in i.items()}.items(), key=lambda x:x[1])
-    for j in res:
-        tfidf_sum[j[0]] += j[1]
-        tfidf_count[j[0]] += 1
+    for i in tfs:
+        res = sorted({k:j*idf[k] for k,j in i.items()}.items(), key=lambda x:x[1])
+        for j in res:
+            tfidf_sum[j[0]] += j[1]
+            tfidf_count[j[0]] += 1
 
-tfidf = {i:tfidf_sum[i]/tfidf_count[i] for i in tfidf_count.keys()}
+    tfidf = {i:tfidf_sum[i]/tfidf_count[i] for i in tfidf_count.keys()}
 
-tfidf_sorted = sorted(tfidf.items(), key=lambda i:i[1])
-idf_sorted = sorted(idf.items(), key=lambda i:i[1])
+    tfidf_sorted = sorted(tfidf.items(), key=lambda i:i[1])
+    idf_sorted = sorted(idf.items(), key=lambda i:i[1])
 
-word_list = list(filter(lambda x:len(x)>3, set([i[0] for i in tfidf_sorted[-TFIDF_FINAL_INCLUDE:]])))
+    word_list = list(filter(lambda x:len(x)>3 and not sum(c.isdigit() for c in x) > 0.5*len(x), set([i[0] for i in tfidf_sorted])))[-TFIDF_FINAL_INCLUDE:]
+else:
+    word_list = []
+    word = ''
+    while word.lower() != "q":
+        if len(word) > 1:
+            word_list.append(word)
+        word = input("Word to define (q for quit): ").strip()
 
 contexts = {}
 max_count = defaultdict(int)
@@ -83,7 +92,7 @@ glossary = {}
 
 print("running predictions...")
 for word, context in tqdm.tqdm(contexts.items()):
-    result = e.execute(word.strip(), context, 
+    result = e.execute(word.strip().lower(), context[:1024], 
                        num_beams=2, min_length=MIN_LENGTH, 
                        no_repeat_ngram_size=2)
 
