@@ -19,13 +19,13 @@ import re
 model_path = "./training/bart_enwiki-kw_summary-e2f01:B_VAL::0:59800:1.1983055472373962"
 
 TFIDF_FINAL_INCLUDE = 100 # "important" words to include
-TOTAL_CONTEXT_SIZE = 10 # size of context to give to model
+TOTAL_CONTEXT_SIZE = 10 # size of context to give to model for each term
 OCCURENCE_CONTEXT = 1 # size of context around each occurance to have
-MIN_LENGTH = 0 # minimum length of items
+MIN_LENGTH = 0 # minimum length of summaries
 
 print("loading corpus...")
 
-with open("./textbook.txt", "r") as data:
+with open("./relativity.txt", "r") as data:
     data_text = data.read()
 
 print("tokenizing corpus...")
