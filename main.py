@@ -23,6 +23,9 @@ import tqdm
 import wandb
 import json
 import os
+import nltk
+
+nltk.download('punkt')
 
 print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW! OR YOU WILL OOM YOUR COMPUTER AND YOU WILLL BE SAD AND BE CONDEMNED TO YEARS OF SADNESS")
 sys.setrecursionlimit(200000) 
@@ -352,7 +355,7 @@ while steps < config.max_steps:
                 # "<labels>"+desiredAnswer+"</labels>\n\n"+
                 # "<src>"+inputWord+"</src>\n",
             # i+(epoch*len(databatched_loader)))
-
+but even then it;s
     # model.save_pretrained(f"./training/bart_enwiki_{epoch}-{modelID}")
 
 
