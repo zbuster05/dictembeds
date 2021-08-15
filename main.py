@@ -25,7 +25,6 @@ import json
 import os
 
 print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW! OR YOU WILL OOM YOUR COMPUTER AND YOU WILLL BE SAD AND BE CONDEMNED TO YEARS OF SADNESS")
-
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
@@ -49,7 +48,7 @@ config = wandb.config
 training_data_originals = []
 
 print("Caching originals data...")
-for i in tqdm.tqdm(range(0,5)):
+for i in tqdm.tqdm(range(0,3)):
     filename = f"./data/{config.wiki}-parsed-long-oc-MD{i}.json"
     with open(filename, "r") as df:
         training_data_originals = training_data_originals + json.load(df)
@@ -60,7 +59,7 @@ training_data_originals = training_data_originals[validation_count:]
 
 training_data_oc = []
 print("Caching OC data...")
-for i in tqdm.tqdm(range(0,5)):
+for i in tqdm.tqdm(range(0,3)):
     filename = f"./data/{config.wiki}-parsed-long-oc-OC{i}.json"
     with open(filename, "r") as df:
         training_data_oc = training_data_oc + json.load(df)
