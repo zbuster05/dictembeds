@@ -19,7 +19,8 @@ import re
 model_path = "./training/bart_enwiki-kw_summary-e2f01:B_VAL::0:59800:1.1983055472373962"
 
 TFIDF_FINAL_INCLUDE = 100 # "important" words to include
-CONTEXT_SIZE = 10 # size of context to give to model
+TOTAL_CONTEXT_SIZE = 10 # size of context to give to model
+OCCURENCE_CONTEXT = 1 # size of context around each occurance to have
 MIN_LENGTH = 0 # minimum length of items
 
 print("loading corpus...")
@@ -61,26 +62,19 @@ idf_sorted = sorted(idf.items(), key=lambda i:i[1])
 word_list = list(filter(lambda x:len(x)>3, set([i[0] for i in tfidf_sorted[-TFIDF_FINAL_INCLUDE:]])))
 
 contexts = {}
-context_ranges = {}
 max_count = defaultdict(int)
 
-# two pointers method to get range for context
-# TODO inefficient because of the 2nd and 3rd for loop
-print("using two pointers to analyse best context range...")
-for i in tqdm.tqdm(range(len(sentences))):
-    for j in range(i, i+CONTEXT_SIZE):
-        for word in word_list:
-            count = 0
-            for sentence in sentences[i:j]:
-                if word in sentence:
-                    count+=1
-            if max_count[word] < count:
-                max_count[word] = count
-                context_ranges[word] = (i,j)
-
-for i,j in tqdm.tqdm(context_ranges.items()):
-    subsets = [i+" " for i in sentences[j[0]:j[1]]]
-    contexts[i] = "".join(subsets).strip()
+print("creating contexts...")
+for word in tqdm.tqdm(word_list):
+    word_context = []
+    for i in range(len(sentences)):
+        if (len(word_context) >= TOTAL_CONTEXT_SIZE):
+            break
+        if word in sentences[i]:
+            word_context = word_context + sentences[max(i-OCCURENCE_CONTEXT,0):i+OCCURENCE_CONTEXT]
+    word_context = list(set(word_context))
+    word_context = word_context[:TOTAL_CONTEXT_SIZE]
+    contexts[word] = "".join([i.strip()+" " for i in word_context])
 
 print("instantiating model...")
 e = Engine(model_path=model_path)
