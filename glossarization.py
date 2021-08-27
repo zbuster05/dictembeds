@@ -12,11 +12,12 @@ import re
 
 # model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
 # model_path = "./training/bart_enwiki-kw_summary-a2fc9:B_VAL::0:24900:0.8616854640095484"
-model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
+# model_path = "./training/bart_enwiki-kw_summary-12944:ROUTINE::0:30000"
 # model_path = "./training/bart_enwiki-kw_summary-a5029:ROUTINE::0:30000"
 # model_path = "./training/bart_enwiki-kw_summary-cf8cd:ROUTINE::0:20000"
 # model_path = "./training/bart_enwiki-kw_summary-3dee1:B_VAL::0:47200:1.8260153889656068"
 # model_path = "./training/bart_enwiki-kw_summary-e2f01:B_VAL::0:59800:1.1983055472373962"
+model_path = "./training/bart_enwiki-kw_summary-07e7d:ROUTINE::0:50000"
 
 TFIDF_FINAL_INCLUDE = 100 # "important" words to include
 TOTAL_CONTEXT_SIZE = 10 # size of context to give to model for each term

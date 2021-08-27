@@ -31,17 +31,17 @@ print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW!
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        learning_rate = 3e-6,
-        num_warmup_steps = 6000,
-        batch_size = 2,
+        learning_rate = 3.2e-6,
+        num_warmup_steps = 6802,
+        batch_size = 1,
         max_length = 215,
         base_model = 'facebook/bart-large',
-        oc_mix = 0.1103,
+        oc_mix = 0.2103,
         val_mix = 0.1,
         noise_mix = 0.1,
-        context_mix = 0.5,
+        context_mix = 0.3,
         wiki = 'enwiki',
-        max_steps = 50000,
+        max_steps = 200807,
     )
 
 # run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
