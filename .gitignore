@@ -296,3 +296,6 @@ linuxenv
 macenv
 source
 .venv/
+
+# Ignore my tarballs
+*.tar.*
