@@ -27,12 +27,12 @@ import nltk
 
 nltk.download('punkt')
 
-print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW! OR YOU WILL OOM YOUR COMPUTER AND YOU WILLL BE SAD AND BE CONDEMNED TO YEARS OF SADNESS")
+print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW! OR YOU WILL OOM YOUR COMPUTER AND YOU WILLL BE SAD AND BE CONDEMNED TO YEARS OF WRITING CLOJURE (AKA SADNESS)")
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
         learning_rate = 3.2e-6,
-        num_warmup_steps = 6802,
+        num_warmup_steps = 6848,
         batch_size = 1,
         max_length = 215,
         base_model = 'facebook/bart-large',
@@ -41,7 +41,7 @@ hyperparametre_defaults = dict(
         noise_mix = 0.1,
         context_mix = 0.3,
         wiki = 'enwiki',
-        max_steps = 200807,
+        max_steps = 200000,
     )
 
 # run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
