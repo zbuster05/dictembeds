@@ -17,16 +17,18 @@ import re
 # model_path = "./training/bart_enwiki-kw_summary-cf8cd:ROUTINE::0:20000"
 # model_path = "./training/bart_enwiki-kw_summary-3dee1:B_VAL::0:47200:1.8260153889656068"
 # model_path = "./training/bart_enwiki-kw_summary-e2f01:B_VAL::0:59800:1.1983055472373962"
-model_path = "./training/bart_enwiki-kw_summary-07e7d:ROUTINE::0:50000"
+# model_path = "./training/bart_enwiki-kw_summary-07e7d:ROUTINE::0:50000"
+# model_path = "./training/bart_enwiki-kw_summary-07e7d:ROUTINE::0:50000"
+model_path = "./training/bart_enwiki-kw_summary-2d8df:ROUTINE::1:10000"
 
 TFIDF_FINAL_INCLUDE = 100 # "important" words to include
-TOTAL_CONTEXT_SIZE = 10 # size of context to give to model for each term
+TOTAL_CONTEXT_SIZE = 20 # size of context to give to model for each term
 OCCURENCE_CONTEXT = 1 # size of context around each occurance to have
 MIN_LENGTH = 0 # minimum length of summaries
 
 print("loading corpus...")
 
-with open("./americanrescue.txt", "r") as data:
+with open("./amercianrev.txt", "r") as data:
     data_text = data.read()
 
 print("tokenizing corpus...")

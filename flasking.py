@@ -19,7 +19,8 @@ CORS(app)
 # model_path = "./training/bart_enwiki-kw_summary-cf8cd:ROUTINE::0:20000"
 # model_path = "./training/bart_enwiki-kw_summary-3dee1:B_VAL::0:47200:1.8260153889656068"
 # model_path = "./training/bart_enwiki-kw_summary-e2f01:B_VAL::0:59800:1.1983055472373962"
-model_path = "./training/bart_enwiki-kw_summary-07e7d:ROUTINE::0:50000"
+# model_path = "./training/bart_enwiki-kw_summary-07e7d:ROUTINE::0:50000"
+model_path = "./training/bart_enwiki-kw_summary-2d8df:ROUTINE::1:10000"
 
 e = Engine(model_path=model_path)
 
