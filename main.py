@@ -32,9 +32,9 @@ print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW!
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
-        learning_rate = 3.2e-6,
-        num_warmup_steps = 6848,
-        batch_size = 1,
+        learning_rate = 3.5e-6,
+        num_warmup_steps = 6500,
+        batch_size = 2,
         max_length = 215,
         base_model = 'facebook/bart-large',
         oc_mix = 0.2103,
@@ -42,11 +42,11 @@ hyperparametre_defaults = dict(
         noise_mix = 0.1,
         context_mix = 0.3,
         wiki = 'enwiki',
-        max_steps = 200000,
+        max_steps = 50000,
     )
 
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+#run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
@@ -293,7 +293,7 @@ while steps < config.max_steps:
 
                     
 
-                run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu), "val_rogue1_precision": rogue["rouge1"].precision, "val_rogue1_recall": rogue["rouge1"].recall, "val_roguel_recall": rogue["rougel"].recall, "val_roguel_precision": rogue["rougel"].precision})
+                run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu), "val_rogue1_precision": rogue["rouge1"].precision, "val_rogue1_recall": rogue["rouge1"].recall, "val_roguel_recall": rogue["rougeL"].recall, "val_roguel_precision": rogue["rougeL"].precision})
 
 
         input_data = chicken['input_data'].to(device)
