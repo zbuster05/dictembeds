@@ -280,8 +280,8 @@ while steps < config.max_steps:
                 rolling_val_rogue1_precision.append(rogue["rouge1"].precision)
                 rolling_val_rogue1_recall.append(rogue["rouge1"].recall)
 
-                rolling_val_roguel_precision.append(rogue["rougel"].precision)
-                rolling_val_roguel_recall.append(rogue["rougel"].recall)
+                rolling_val_roguel_precision.append(rogue["rougeL"].precision)
+                rolling_val_roguel_recall.append(rogue["rougeL"].recall)
 
                  # if we have a new min                                  # if we haden't just started
                 if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
@@ -359,8 +359,8 @@ while steps < config.max_steps:
                          "target": wandb.Html(desiredAnswer[3:-4]),
                          "rogue1_precision": rogue["rouge1"].precision,
                          "rogue1_recall": rogue["rouge1"].recall,
-                         "roguel_recall": rogue["rougel"].recall,
-                         "roguel_precision": rogue["rougel"].precision
+                         "roguel_recall": rogue["rougeL"].recall,
+                         "roguel_precision": rogue["rougeL"].precision
                        })
 
                 run.summary["max_accuracy"] = max_acc
