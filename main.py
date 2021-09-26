@@ -6,6 +6,7 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
 
 from nltk.tokenize import sent_tokenize
+from rouge_score import rouge_scorer
 
 import statistics
 
@@ -44,8 +45,8 @@ hyperparametre_defaults = dict(
         max_steps = 200000,
     )
 
-# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+# run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 training_data_originals = []
@@ -187,10 +188,16 @@ rolling_val_acc = []
 rolling_val_loss = []
 rolling_val_bleu = []
 
+rolling_val_rogue1_precision = []
+rolling_val_rogue1_recall = []
+rolling_val_roguel_precision = []
+rolling_val_roguel_recall = []
+
 epochs = 0
 steps = 0
 
 min_val_20rolling = 1000
+score = rouge_scorer.RougeScorer(['rouge1', 'rougeL'], use_stemmer=True)
 
 while steps < config.max_steps:
     databatched_loader = tqdm.tqdm(train_loader)
@@ -240,11 +247,22 @@ while steps < config.max_steps:
 
             acc = c/t
             try: 
+                rogue = score.score(desiredAnswer, answer)
                 bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
             except ValueError:
                 continue
 
             if "<CND>" not in desiredAnswer:
+                if (len(rolling_val_rogue1_precision) >= 20):
+                    rolling_val_rogue1_precision.pop(0)
+                if (len(rolling_val_rogue1_recall) >= 20):
+                    rolling_val_rogue1_recall.pop(0)
+
+                if (len(rolling_val_roguel_precision) >= 20):
+                    rolling_val_roguel_precision.pop(0)
+                if (len(rolling_val_roguel_recall) >= 20):
+                    rolling_val_roguel_recall.pop(0)
+
                 if (len(rolling_val_acc) >= 20):
                     rolling_val_acc.pop(0)
 
@@ -258,6 +276,13 @@ while steps < config.max_steps:
                 rolling_val_loss.append(val_loss.item())
                 rolling_val_bleu.append(bleu)
 
+
+                rolling_val_rogue1_precision.append(rogue["rouge1"].precision)
+                rolling_val_rogue1_recall.append(rogue["rouge1"].recall)
+
+                rolling_val_roguel_precision.append(rogue["rougel"].precision)
+                rolling_val_roguel_recall.append(rogue["rougel"].recall)
+
                  # if we have a new min                                  # if we haden't just started
                 if statistics.mean(rolling_val_loss)<(min_val_20rolling-0.1) and i > 10000:
                     min_val_20rolling = statistics.mean(rolling_val_loss)
@@ -268,7 +293,7 @@ while steps < config.max_steps:
 
                     
 
-                run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu)})
+                run.log({"val_loss": val_loss.item(), "val_accuracy": acc, "val_bleu": bleu, "val_loss_20rolling": statistics.mean(rolling_val_loss), "val_accuracy_20rolling": statistics.mean(rolling_val_acc), "val_bleu_20rolling": statistics.mean(rolling_val_bleu), "val_rogue1_precision": rogue["rouge1"].precision, "val_rogue1_recall": rogue["rouge1"].recall, "val_roguel_recall": rogue["rougel"].recall, "val_roguel_precision": rogue["rougel"].precision})
 
 
         input_data = chicken['input_data'].to(device)
@@ -315,6 +340,7 @@ while steps < config.max_steps:
         inputWord = tokenizer.convert_tokens_to_string(inputWord_tokens)
 
         try: 
+            rogue = score.score(desiredAnswer, answer)
             bleu = sentence_bleu([desiredAnswer_tokens], answer_tokens_clear, smoothing_function=smoothie)
         except ValueError:
             continue
@@ -330,7 +356,11 @@ while steps < config.max_steps:
                          "input": wandb.Html(inputWord[3:-4]),
                          "logits": wandb.Histogram(logits[0].detach().cpu()),
                          "output": wandb.Html(answer[3:-4]),
-                         "target": wandb.Html(desiredAnswer[3:-4])
+                         "target": wandb.Html(desiredAnswer[3:-4]),
+                         "rogue1_precision": rogue["rouge1"].precision,
+                         "rogue1_recall": rogue["rouge1"].recall,
+                         "roguel_recall": rogue["rougel"].recall,
+                         "roguel_precision": rogue["rougel"].precision
                        })
 
                 run.summary["max_accuracy"] = max_acc
