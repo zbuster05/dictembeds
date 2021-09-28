@@ -42,7 +42,7 @@ hyperparametre_defaults = dict(
         noise_mix = 0.1,
         context_mix = 0.3,
         wiki = 'enwiki',
-        max_steps = 50000,
+        max_steps = 20000,
     )
 
 #run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
@@ -348,7 +348,7 @@ while steps < config.max_steps:
         avg_bleu = (avg_bleu+bleu)/2
         max_bleu = max(max_bleu, bleu)
 
-        if (i % 10 == 0):
+        if (i % 50 == 0):
             try: 
                 run.log({"loss": loss.item(),
                          "accuracy": acc,
@@ -380,6 +380,9 @@ while steps < config.max_steps:
             break
 
     epochs += 1
+
+print("it ended :)))))))))))")
+
 #         writer.add_text('Train/sample', 
                 # "<logits>"+answer+"</logits>\n\n"+
                 # "<labels>"+desiredAnswer+"</labels>\n\n"+
