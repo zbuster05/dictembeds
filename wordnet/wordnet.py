@@ -1,18 +1,11 @@
 import nltk
 from nltk.corpus import wordnet as wn
 
-import nltk
-import ssl
-
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
-nltk.download('wordnet')
-
-
-
+def get_word_definition(word):
+    try:
+        definition = wn.synsets(word+".n.01").definition()
+    except(nltk.corpus.reader.wordnet.WordNetError):
+        print(word + " was skipped because it doesn't bloody exist")
+        definition = None
+    return definition
 
