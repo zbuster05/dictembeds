@@ -30,6 +30,13 @@ Next, install all the dependencies via
 pip install -r requirements.txt
 ```
 
-Nextly, install a dump of wikipedia [here](https://dumps.wikimedia.org/).  
+Nextly, install a dump of wikipedia [here](https://dumps.wikimedia.org/).
+
+Finally, run the data pre-procesing via
+
+```bash
+python3 scrape.py
+```
+
 
 
