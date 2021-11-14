@@ -2,7 +2,7 @@
 
 ## Setup and Installation
 
-The first step is to clone the repository.
+The first step is to downlaod the repository.
 
 
 Change into the folder like so:
