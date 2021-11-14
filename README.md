@@ -1,4 +1,4 @@
-# Dictembed
+# ConfDef
 
 ## Setup and Installation
 
