@@ -45,9 +45,6 @@ class Engine:
             num_beams=num_beams,
             max_length=1000,
             min_length=min_length,
-#             do_sample=True,
-            # top_p = 0.90,
-            # top_k = 20,
             length_penalty = 0.8,
             repetition_penalty = 1.2
         )

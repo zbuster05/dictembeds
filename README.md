@@ -40,7 +40,7 @@ To train the model, simply run `main.py` via
 python3 main.py
 ```
 
-To execute the model, simply run `execute.py` via
+To validate the model, simply check to make sure the model id is correct and run `validate_rouge.py` via
 
 ```bash
 python3 execute.py
