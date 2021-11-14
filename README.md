@@ -2,11 +2,8 @@
 
 ## Setup and Installation
 
-The first step is to clone the following repository.
+The first step is to clone the repository.
 
-```bash
-git clone --recursive <repositor url>
-```
 
 Change into the folder like so:
 
