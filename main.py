@@ -28,7 +28,6 @@ import nltk
 
 nltk.download('punkt')
 
-print("HEY HEY HEY DO YOU HAVE 20GB OF RAM+SWAP??? IF NOT KILL THIS PROCESS NOW! OR YOU WILL OOM YOUR COMPUTER AND YOU WILLL BE SAD AND BE CONDEMNED TO YEARS OF WRITING CLOJURE (AKA SADNESS)")
 sys.setrecursionlimit(200000) 
 
 hyperparametre_defaults = dict(
@@ -45,8 +44,8 @@ hyperparametre_defaults = dict(
         max_steps = 20000,
     )
 
-#run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
-run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
+run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults, mode="disabled")
+#run = wandb.init(project='dictembed', entity='inscriptio', config=hyperparametre_defaults)
 config = wandb.config
 
 print("Caching originals data...")
