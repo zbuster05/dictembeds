@@ -1,8 +1,5 @@
 # Dictembed
 
-## Overview
-Dictembed is a project meant to push the limits of automated lexicography with a process able to generate context aware descriptions of a given term within a text. It's been trained on a novel Wikipedia dataset. For more information, refer to our paper (insert link or something idfk).
-
 ## Setup and Installation
 
 The first step is to clone the following repository.
