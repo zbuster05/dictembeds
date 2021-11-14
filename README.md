@@ -38,5 +38,17 @@ Finally, run the data pre-procesing via
 python3 scrape.py
 ```
 
+## Usage
 
+To train the model, simply run `main.py` via
+
+```bash
+python3 main.py
+```
+
+To execute the model, simply run `execute.py` via
+
+```bash
+python3 execute.py
+```
 
