@@ -5,11 +5,8 @@
 The first step is to downlaod the repository.
 
 
-Change into the folder like so:
+Change into the folder using the `cd` command
 
-```
-cd dictembed
-```
 
 The next step is to install all the dependencies. To do so we recommend creating and sourcing a new python virtual environment like so:
 
