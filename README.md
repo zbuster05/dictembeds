@@ -1,5 +1,9 @@
 # ConfDef
 
+## Paper
+
+The full published ConDef paper can be found [here](https://link.springer.com/chapter/10.1007/978-3-031-10464-0_41).
+
 ## Setup and Installation
 
 The first step is to downlaod the repository.
